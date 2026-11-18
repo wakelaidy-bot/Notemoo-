@@ -179,9 +179,9 @@
       gap: 4px;
     }
     .cal-cell {
-      min-height: 58px;
+      min-height: 52px;
       border-radius: 12px;
-      padding: 4px 2px;
+      padding: 6px 2px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -206,7 +206,7 @@
       justify-content: center;
       font-size: 13px;
       font-weight: 600;
-      margin-bottom: 2px;
+      margin-bottom: 4px;
     }
     .cal-cell.weekend .cal-day-num {
       color: var(--expense);
@@ -220,21 +220,9 @@
       color: var(--income);
       font-size: 10px;
       font-weight: 700;
-      padding: 1px 4px;
-      border-radius: 4px;
+      padding: 2px 5px;
+      border-radius: 5px;
       line-height: 1.25;
-      max-width: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-variant-numeric: tabular-nums;
-    }
-    .cal-badge-deduct {
-      color: var(--deduct);
-      font-size: 9px;
-      font-weight: 600;
-      line-height: 1.2;
-      margin-top: 1px;
       max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -665,7 +653,6 @@
       </div>
       <div class="day-summary-stats">
         <span class="inc-color" id="dayTotalIncome">總收入: $0</span>
-        <span class="deduct-color" id="dayTotalDeduction" style="margin-left:8px;">回金: $0</span>
       </div>
     </div>
 
@@ -720,6 +707,9 @@
       <button style="background:none; border:none; color:var(--text-muted); font-size:15px;" onclick="closeModal()">取消</button>
     </div>
 
+    <!-- 項目分類移至輸入總金額上方 -->
+    <div class="cat-grid" id="categoryGrid"></div>
+
     <div class="amount-input-box">
       <span>$</span>
       <input type="number" id="inputAmount" inputmode="decimal" placeholder="輸入總金額" oninput="updateCalcPreview()" />
@@ -753,8 +743,6 @@
         <strong id="calcResultText">實拿：$0</strong>
       </div>
     </div>
-
-    <div class="cat-grid" id="categoryGrid"></div>
 
     <div class="meta-inputs">
       <input type="date" id="inputDate" />
@@ -937,12 +925,9 @@
 
     transactions.forEach(t => {
       if (!t.date) return;
-      if (!dailyStats[t.date]) dailyStats[t.date] = { inc: 0, deduct: 0 };
+      if (!dailyStats[t.date]) dailyStats[t.date] = { inc: 0 };
       if (t.type === 'income') {
         dailyStats[t.date].inc += t.amount;
-        dailyStats[t.date].deduct += (t.deduction || 0);
-      } else if (t.category === 'deduct_fee') {
-        dailyStats[t.date].deduct += t.amount;
       }
     });
 
@@ -963,14 +948,12 @@
 
       const stat = dailyStats[cellDateStr];
       const incHtml = stat && stat.inc > 0 ? `<div class="cal-badge-inc">$${stat.inc.toLocaleString()}</div>` : '';
-      const deductHtml = stat && stat.deduct > 0 ? `<div class="cal-badge-deduct">回$${stat.deduct.toLocaleString()}</div>` : '';
 
       html += `
         <div class="cal-cell ${isOtherMonth ? 'other-month' : ''} ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''} ${isWeekend ? 'weekend' : ''}"
              onclick="selectDate('${cellDateStr}')">
           <div class="cal-day-num">${cellDate.getDate()}</div>
           ${incHtml}
-          ${deductHtml}
         </div>
       `;
     }
@@ -986,18 +969,13 @@
       .sort((a, b) => b.id - a.id);
 
     let dayInc = 0;
-    let dayDeduct = 0;
     dayList.forEach(t => {
       if (t.type === 'income') {
         dayInc += t.amount;
-        dayDeduct += (t.deduction || 0);
-      } else if (t.category === 'deduct_fee') {
-        dayDeduct += t.amount;
       }
     });
 
     document.getElementById('dayTotalIncome').textContent = `總收入: $${dayInc.toLocaleString()}`;
-    document.getElementById('dayTotalDeduction').textContent = `回金: $${dayDeduct.toLocaleString()}`;
 
     const container = document.getElementById('listView');
     if (dayList.length === 0) {
@@ -1039,10 +1017,13 @@
     const filtered = list.filter(t => t.type === chartMode);
     const catList = categories[chartMode] || [];
     const totals = {};
+    const counts = {};
     let grandTotal = 0;
+    let totalCount = filtered.length;
 
     filtered.forEach(t => {
       totals[t.category] = (totals[t.category] || 0) + t.amount;
+      counts[t.category] = (counts[t.category] || 0) + 1;
       grandTotal += t.amount;
     });
 
@@ -1057,32 +1038,101 @@
         data.push(totals[cat.id]);
         colors.push(cat.color || '#0A84FF');
         const pct = grandTotal > 0 ? ((totals[cat.id] / grandTotal) * 100).toFixed(1) : 0;
-        breakdownItems.push({ ...cat, amount: totals[cat.id], pct });
+        const count = counts[cat.id] || 0;
+        breakdownItems.push({ ...cat, amount: totals[cat.id], pct, count, totalCount });
         delete totals[cat.id];
+        delete counts[cat.id];
       }
     });
 
     Object.keys(totals).forEach(unknownId => {
       const pct = grandTotal > 0 ? ((totals[unknownId] / grandTotal) * 100).toFixed(1) : 0;
+      const count = counts[unknownId] || 0;
       labels.push('其他歷史分類');
       data.push(totals[unknownId]);
       colors.push('#8E8E93');
-      breakdownItems.push({ name: '其他歷史分類', icon: '📝', amount: totals[unknownId], pct });
+      breakdownItems.push({ name: '其他歷史分類', icon: '📝', amount: totals[unknownId], pct, count, totalCount });
     });
 
     breakdownItems.sort((a, b) => b.amount - a.amount);
 
     const breakdownEl = document.getElementById('categoryBreakdown');
+    let htmlContent = '';
+
     if (breakdownItems.length === 0) {
-      breakdownEl.innerHTML = `<div class="empty-state" style="padding:20px; border:none;">本月無${chartMode === 'expense' ? '支出' : '收入'}數據</div>`;
+      htmlContent = `<div class="empty-state" style="padding:20px; border:none;">本月無${chartMode === 'expense' ? '支出' : '收入'}數據</div>`;
     } else {
-      breakdownEl.innerHTML = breakdownItems.map(item => `
+      htmlContent = breakdownItems.map(item => `
         <div class="stat-row">
-          <div>${item.icon} ${escapeHTML(item.name)} <span style="color:var(--text-muted); font-size:12px;">(${item.pct}%)</span></div>
+          <div>${item.icon} ${escapeHTML(item.name)} <span style="color:var(--text-muted); font-size:12px;">(${item.pct}% · ${item.count}/${item.totalCount}筆)</span></div>
           <strong style="font-variant-numeric: tabular-nums;">$${item.amount.toLocaleString()}</strong>
         </div>
       `).join('');
     }
+
+    // 若切換至支出統計，額外新增「分類回金類別統計區塊」（包含固定回金、百回、其他等共幾個多少錢）
+    if (chartMode === 'expense') {
+      let fixedReturnCount = 0, fixedReturnTotal = 0;
+      let percentReturnCount = 0, percentReturnTotal = 0;
+      let otherDeductCount = 0, otherDeductTotal = 0;
+
+      // 檢查本月所有收入項目的回金拆解紀錄
+      list.filter(t => t.type === 'income').forEach(t => {
+        let rawAmount = t.rawAmount !== undefined ? t.rawAmount : (t.amount + (t.deduction || 0));
+        let mode = t.calcMode;
+        let ded = t.deduction || 0;
+
+        if (ded > 0) {
+          if (mode === 'opt1') {
+            fixedReturnCount += 1;
+            fixedReturnTotal += ded;
+          } else if (mode === 'opt2') {
+            // opt2 固定+百回：其中包含固定回金部分與百回部分
+            let fixedRetVal = t.fixedReturn !== undefined ? t.fixedReturn : 20;
+            let percentDeduct = ded - fixedRetVal;
+            if (fixedRetVal > 0) {
+              fixedReturnCount += 1;
+              fixedReturnTotal += fixedRetVal;
+            }
+            if (percentDeduct > 0) {
+              percentReturnCount += 1;
+              percentReturnTotal += percentDeduct;
+            }
+          } else {
+            otherDeductCount += 1;
+            otherDeductTotal += ded;
+          }
+        }
+      });
+
+      // 同時也納入一般支出分類中屬於回金或扣款的項目
+      filtered.forEach(t => {
+        if (t.category === 'deduct_fee') {
+          fixedReturnCount += 1;
+          fixedReturnTotal += t.amount;
+        }
+      });
+
+      htmlContent += `
+        <div style="margin-top:20px; padding-top:14px; border-top: 1px dashed var(--border);">
+          <div style="font-size:14px; font-weight:700; margin-bottom:10px; color:var(--deduct);">📊 分類回金類別統計</div>
+          <div class="stat-row">
+            <div>🔄 固定回金 <span style="color:var(--text-muted); font-size:12px;">(${fixedReturnCount}筆)</span></div>
+            <strong class="deduct-color" style="font-variant-numeric: tabular-nums;">$${fixedReturnTotal.toLocaleString()}</strong>
+          </div>
+          <div class="stat-row">
+            <div>💯 百回 (比例回金) <span style="color:var(--text-muted); font-size:12px;">(${percentReturnCount}筆)</span></div>
+            <strong class="deduct-color" style="font-variant-numeric: tabular-nums;">$${percentReturnTotal.toLocaleString()}</strong>
+          </div>
+          <div class="stat-row">
+            <div>📦 其他回金 <span style="color:var(--text-muted); font-size:12px;">(${otherDeductCount}筆)</span></div>
+            <strong class="deduct-color" style="font-variant-numeric: tabular-nums;">$${otherDeductTotal.toLocaleString()}</strong>
+          </div>
+        </div>
+      `;
+    }
+
+    breakdownEl.innerHTML = htmlContent;
 
     const ctx = document.getElementById('categoryChart').getContext('2d');
     if (chartInstance) chartInstance.destroy();
@@ -1191,13 +1241,11 @@
 
     document.getElementById('inputDate').value = tx.date;
 
-    // 還原原始輸入金額、回金模式與乾淨備註
     let restoredRaw = tx.rawAmount;
     let restoredMode = tx.calcMode;
     let restoredFixed = tx.fixedReturn;
     let cleanNote = tx.note || '';
 
-    // 相容舊資料格式解析
     if (restoredRaw === undefined) {
       const m1 = cleanNote.match(/^固定回金\$(\d+)\(原\$(\d+(?:\.\d+)?)\)(?:\s*·\s*)?(.*)$/);
       const m2 = cleanNote.match(/^固定\+百回\(原\$(\d+(?:\.\d+)?),回\$(\d+(?:\.\d+)?)\)(?:\s*·\s*)?(.*)$/);
