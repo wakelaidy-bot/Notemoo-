@@ -18,6 +18,7 @@
       --accent: #0A84FF;
       --income: #30D158;
       --expense: #FF453A;
+      --deduct: #FF9F0A;
       --border: #2C2C2E;
     }
     * {
@@ -126,7 +127,7 @@
     }
     .inc-color { color: var(--income); }
     .exp-color { color: var(--expense); }
-    .deduct-color { color: #FF9F0A; }
+    .deduct-color { color: var(--deduct); }
 
     .segment-control {
       display: grid;
@@ -134,7 +135,7 @@
       background: var(--card);
       padding: 3px;
       border-radius: 12px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
     .segment-btn {
       background: transparent;
@@ -151,13 +152,123 @@
       color: var(--text);
     }
 
+    /* 月行事曆區塊 */
+    .calendar-card {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 14px 10px;
+      margin-bottom: 16px;
+      border: 0.5px solid var(--border);
+    }
+    .cal-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .cal-weekdays span:nth-child(6),
+    .cal-weekdays span:nth-child(7) {
+      color: var(--expense);
+    }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .cal-cell {
+      min-height: 58px;
+      border-radius: 12px;
+      padding: 4px 2px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background 0.15s;
+    }
+    .cal-cell.other-month {
+      opacity: 0.32;
+    }
+    .cal-cell.selected {
+      background: rgba(10, 132, 255, 0.16);
+      border-color: var(--accent);
+    }
+    .cal-day-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .cal-cell.weekend .cal-day-num {
+      color: var(--expense);
+    }
+    .cal-cell.today .cal-day-num {
+      background: var(--accent);
+      color: #fff;
+    }
+    .cal-badge-inc {
+      background: rgba(48, 209, 88, 0.22);
+      color: var(--income);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 4px;
+      border-radius: 4px;
+      line-height: 1.25;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    .cal-badge-deduct {
+      color: var(--deduct);
+      font-size: 9px;
+      font-weight: 600;
+      line-height: 1.2;
+      margin-top: 1px;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* 選中日期標題列 */
+    .day-summary-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 4px 12px;
+    }
+    .day-summary-date {
+      font-size: 15px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .day-summary-stats {
+      text-align: right;
+      font-size: 13px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
     .chart-card {
       background: var(--card);
       border-radius: 20px;
       padding: 20px;
       margin-bottom: 16px;
       border: 0.5px solid var(--border);
-      display: none;
     }
     .chart-wrapper {
       position: relative;
@@ -230,22 +341,41 @@
     }
     .tx-amount {
       font-size: 16px;
-      font-weight: 600;
+      font-weight: 700;
       font-variant-numeric: tabular-nums;
       display: block;
     }
-    .tx-del {
+    .tx-deduct-sub {
+      font-size: 11px;
+      color: var(--deduct);
+      display: block;
+      margin-top: 1px;
+      font-variant-numeric: tabular-nums;
+    }
+    .tx-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .tx-btn-action {
       background: none;
       border: none;
-      color: var(--text-muted);
       font-size: 11px;
-      padding: 4px 0 0;
+      padding: 2px 0;
+      cursor: pointer;
     }
+    .tx-edit { color: var(--accent); }
+    .tx-del { color: var(--text-muted); }
+
     .empty-state {
       text-align: center;
       color: var(--text-muted);
-      padding: 40px 20px;
+      padding: 36px 20px;
       font-size: 14px;
+      background: var(--card);
+      border-radius: 16px;
+      border: 0.5px solid var(--border);
     }
 
     .fab {
@@ -280,7 +410,7 @@
       margin: 0 auto;
       border-radius: 24px 24px 0 0;
       padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
-      max-height: 88vh;
+      max-height: 90vh;
       overflow-y: auto;
       animation: slideUp 0.22s ease-out;
     }
@@ -381,15 +511,14 @@
       margin-bottom: 10px;
       font-size: 13px;
     }
-    .fixed-return-adjust input {
-      width: 70px;
+    .fixed-return-adjust select {
       background: #3A3A3C;
       border: none;
       color: var(--text);
-      padding: 4px 8px;
-      border-radius: 6px;
-      text-align: right;
-      font-weight: bold;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
       outline: none;
     }
 
@@ -398,7 +527,7 @@
       grid-template-columns: repeat(4, 1fr);
       gap: 8px;
       margin-bottom: 14px;
-      max-height: 185px;
+      max-height: 175px;
       overflow-y: auto;
     }
     .cat-chip {
@@ -515,47 +644,71 @@
 </header>
 
 <div class="container">
-  <div class="summary-card">
-    <div class="net-label">本月淨利結餘</div>
-    <div class="net-amount" id="netAmount">$0</div>
-    <div class="sub-metrics">
-      <div class="metric-box">
-        <span>營收 / 收入</span>
-        <strong class="inc-color" id="totalIncome">$0</strong>
-      </div>
-      <div class="metric-box">
-        <span>營運成本 / 支出</span>
-        <strong class="exp-color" id="totalExpense">$0</strong>
-      </div>
-      <div class="metric-box">
-        <span>回金總金額</span>
-        <strong class="deduct-color" id="totalDeduction">$0</strong>
-      </div>
-    </div>
-  </div>
-
   <div class="segment-control">
-    <button class="segment-btn active" id="tabList" onclick="switchTab('list')">收支明細</button>
+    <button class="segment-btn active" id="tabCalendar" onclick="switchTab('calendar')">行事曆明細</button>
     <button class="segment-btn" id="tabChart" onclick="switchTab('chart')">分類統計</button>
   </div>
 
-  <div id="listView" class="tx-list"></div>
+  <!-- 首頁：月行事曆 + 當日收支明細 -->
+  <div id="calendarView">
+    <div class="calendar-card">
+      <div class="cal-weekdays">
+        <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+      </div>
+      <div class="cal-grid" id="calendarGrid"></div>
+    </div>
 
-  <div id="chartView" class="chart-card" style="display:none;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-      <span style="font-size:14px; font-weight:600;" id="chartTitle">收入圓餅圖與統計</span>
-      <button class="header-btn" onclick="toggleChartType()" id="chartToggleBtn">切換支出統計</button>
+    <div class="day-summary-bar">
+      <div class="day-summary-date">
+        <span>📅</span>
+        <span id="selectedDateTitle">2026年11月18日</span>
+      </div>
+      <div class="day-summary-stats">
+        <span class="inc-color" id="dayTotalIncome">總收入: $0</span>
+        <span class="deduct-color" id="dayTotalDeduction" style="margin-left:8px;">回金: $0</span>
+      </div>
     </div>
-    <div class="chart-wrapper">
-      <canvas id="categoryChart"></canvas>
+
+    <div id="listView" class="tx-list"></div>
+  </div>
+
+  <!-- 分類統計分頁（含本月淨利結餘總覽） -->
+  <div id="chartView" style="display:none;">
+    <div class="summary-card">
+      <div class="net-label">本月淨利結餘</div>
+      <div class="net-amount" id="netAmount">$0</div>
+      <div class="sub-metrics">
+        <div class="metric-box">
+          <span>營收 / 收入</span>
+          <strong class="inc-color" id="totalIncome">$0</strong>
+        </div>
+        <div class="metric-box">
+          <span>營運成本 / 支出</span>
+          <strong class="exp-color" id="totalExpense">$0</strong>
+        </div>
+        <div class="metric-box">
+          <span>回金總金額</span>
+          <strong class="deduct-color" id="totalDeduction">$0</strong>
+        </div>
+      </div>
     </div>
-    <div id="categoryBreakdown" style="margin-top: 14px;"></div>
+
+    <div class="chart-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <span style="font-size:14px; font-weight:600;" id="chartTitle">收入圓餅圖與統計</span>
+        <button class="header-btn" onclick="toggleChartType()" id="chartToggleBtn">切換支出統計</button>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="categoryChart"></canvas>
+      </div>
+      <div id="categoryBreakdown" style="margin-top: 14px;"></div>
+    </div>
   </div>
 </div>
 
 <button class="fab" onclick="openModal()">+ 記一筆</button>
 
-<!-- 記帳彈出面板 -->
+<!-- 新增 / 編輯記帳彈出面板 -->
 <div class="modal-backdrop" id="modalBackdrop" onclick="closeModalOnBg(event)">
   <div class="bottom-sheet">
     <div class="sheet-header">
@@ -563,6 +716,7 @@
         <button id="btnTypeInc" class="active-inc" onclick="setTxType('income')">營收/收入</button>
         <button id="btnTypeExp" onclick="setTxType('expense')">支出</button>
       </div>
+      <span id="modalModeLabel" style="font-size:12px; color:var(--text-muted);">新增紀錄</span>
       <button style="background:none; border:none; color:var(--text-muted); font-size:15px;" onclick="closeModal()">取消</button>
     </div>
 
@@ -571,11 +725,23 @@
       <input type="number" id="inputAmount" inputmode="decimal" placeholder="輸入總金額" oninput="updateCalcPreview()" />
     </div>
 
-    <!-- 收入專屬計算選項與固定回金動態調整 -->
+    <!-- 收入專屬計算選項與固定回金下拉式選單 -->
     <div class="calc-mode-box" id="calcModeBox">
       <div class="fixed-return-adjust">
         <span>此筆固定回金金額：</span>
-        <input type="number" id="inputFixedReturn" value="20" oninput="updateCalcPreview()" />
+        <select id="inputFixedReturn" onchange="updateCalcPreview()">
+          <option value="0">$0</option>
+          <option value="10">$10</option>
+          <option value="20" selected>$20</option>
+          <option value="30">$30</option>
+          <option value="40">$40</option>
+          <option value="50">$50</option>
+          <option value="60">$60</option>
+          <option value="70">$70</option>
+          <option value="80">$80</option>
+          <option value="90">$90</option>
+          <option value="100">$100</option>
+        </select>
       </div>
       <div class="calc-options">
         <button type="button" class="calc-btn selected" id="calcOpt1" onclick="setCalcMode('opt1')">1.固定回金</button>
@@ -595,7 +761,7 @@
       <input type="text" id="inputNote" placeholder="備註 (如: 趟數、地點)" />
     </div>
 
-    <button class="submit-btn" onclick="saveTransaction()">儲存紀錄</button>
+    <button class="submit-btn" id="submitTxBtn" onclick="saveTransaction()">儲存紀錄</button>
   </div>
 </div>
 
@@ -618,7 +784,19 @@
         <option value="opt2">2.固定+百</option>
         <option value="opt3">3.其他</option>
       </select>
-      <input type="number" id="newCatFixedReturn" placeholder="固定回金" value="20" style="text-align:center;" />
+      <select id="newCatFixedReturn" class="manage-select">
+        <option value="0">$0</option>
+        <option value="10">$10</option>
+        <option value="20" selected>$20</option>
+        <option value="30">$30</option>
+        <option value="40">$40</option>
+        <option value="50">$50</option>
+        <option value="60">$60</option>
+        <option value="70">$70</option>
+        <option value="80">$80</option>
+        <option value="90">$90</option>
+        <option value="100">$100</option>
+      </select>
       <button class="add-cat-btn" onclick="addNewCategory()">新增</button>
     </div>
 
@@ -652,17 +830,27 @@
   };
 
   const PALETTE = ['#30D158', '#0A84FF', '#FF9F0A', '#FF453A', '#BF5AF2', '#64D2FF', '#FFD60A', '#AC8E68', '#5E5CE6'];
+  const FIXED_RETURN_OPTIONS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 
   let categories = JSON.parse(localStorage.getItem('driver_categories_v1')) || DEFAULT_CATEGORIES;
   let transactions = JSON.parse(localStorage.getItem('driver_ledger_v1')) || [];
   let currentYear = new Date().getFullYear();
   let currentMonth = new Date().getMonth();
+  let selectedDateStr = formatDateYMD(new Date());
   let currentTxType = 'income';
   let selectedCategory = categories.income[0]?.id || 'fare';
   let currentCalcMode = 'opt1';
+  let editingTxId = null;
   let manageCatType = 'income';
   let chartMode = 'income';
   let chartInstance = null;
+
+  function formatDateYMD(dateObj) {
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const d = String(dateObj.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
 
   function init() {
     updateMonthLabel();
@@ -678,7 +866,28 @@
     currentMonth += delta;
     if (currentMonth > 11) { currentMonth = 0; currentYear++; }
     if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+
+    const today = new Date();
+    if (today.getFullYear() === currentYear && today.getMonth() === currentMonth) {
+      selectedDateStr = formatDateYMD(today);
+    } else {
+      selectedDateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
+    }
+
     updateMonthLabel();
+    renderAll();
+  }
+
+  function selectDate(dateStr) {
+    selectedDateStr = dateStr;
+    const parts = dateStr.split('-');
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10) - 1;
+    if (y !== currentYear || m !== currentMonth) {
+      currentYear = y;
+      currentMonth = m;
+      updateMonthLabel();
+    }
     renderAll();
   }
 
@@ -695,9 +904,10 @@
   }
 
   function renderAll() {
-    const list = getFilteredTransactions();
+    const monthList = getFilteredTransactions();
     let inc = 0, exp = 0, totalDeduction = 0;
-    list.forEach(t => {
+
+    monthList.forEach(t => {
       if (t.type === 'income') {
         inc += t.amount;
         totalDeduction += (t.deduction || 0);
@@ -716,32 +926,109 @@
     document.getElementById('totalExpense').textContent = `$${exp.toLocaleString()}`;
     document.getElementById('totalDeduction').textContent = `$${totalDeduction.toLocaleString()}`;
 
-    renderList(list);
-    renderChart(list);
+    renderCalendar();
+    renderSelectedDayView();
+    renderChart(monthList);
   }
 
-  function renderList(list) {
+  function renderCalendar() {
+    const grid = document.getElementById('calendarGrid');
+    const dailyStats = {};
+
+    transactions.forEach(t => {
+      if (!t.date) return;
+      if (!dailyStats[t.date]) dailyStats[t.date] = { inc: 0, deduct: 0 };
+      if (t.type === 'income') {
+        dailyStats[t.date].inc += t.amount;
+        dailyStats[t.date].deduct += (t.deduction || 0);
+      } else if (t.category === 'deduct_fee') {
+        dailyStats[t.date].deduct += t.amount;
+      }
+    });
+
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+    const startWeekday = (firstDayOfMonth.getDay() + 6) % 7; // 週一=0 ... 週日=6
+    const startDate = new Date(currentYear, currentMonth, 1 - startWeekday);
+    const todayStr = formatDateYMD(new Date());
+
+    let html = '';
+    for (let i = 0; i < 42; i++) {
+      const cellDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
+      const cellDateStr = formatDateYMD(cellDate);
+      const isOtherMonth = cellDate.getMonth() !== currentMonth;
+      const isSelected = cellDateStr === selectedDateStr;
+      const isToday = cellDateStr === todayStr;
+      const dayOfWeek = cellDate.getDay();
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+      const stat = dailyStats[cellDateStr];
+      const incHtml = stat && stat.inc > 0 ? `<div class="cal-badge-inc">$${stat.inc.toLocaleString()}</div>` : '';
+      const deductHtml = stat && stat.deduct > 0 ? `<div class="cal-badge-deduct">回$${stat.deduct.toLocaleString()}</div>` : '';
+
+      html += `
+        <div class="cal-cell ${isOtherMonth ? 'other-month' : ''} ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''} ${isWeekend ? 'weekend' : ''}"
+             onclick="selectDate('${cellDateStr}')">
+          <div class="cal-day-num">${cellDate.getDate()}</div>
+          ${incHtml}
+          ${deductHtml}
+        </div>
+      `;
+    }
+    grid.innerHTML = html;
+  }
+
+  function renderSelectedDayView() {
+    const parts = selectedDateStr.split('-');
+    document.getElementById('selectedDateTitle').textContent = `${parts[0]}年${parseInt(parts[1], 10)}月${parseInt(parts[2], 10)}日`;
+
+    const dayList = transactions
+      .filter(t => t.date === selectedDateStr)
+      .sort((a, b) => b.id - a.id);
+
+    let dayInc = 0;
+    let dayDeduct = 0;
+    dayList.forEach(t => {
+      if (t.type === 'income') {
+        dayInc += t.amount;
+        dayDeduct += (t.deduction || 0);
+      } else if (t.category === 'deduct_fee') {
+        dayDeduct += t.amount;
+      }
+    });
+
+    document.getElementById('dayTotalIncome').textContent = `總收入: $${dayInc.toLocaleString()}`;
+    document.getElementById('dayTotalDeduction').textContent = `回金: $${dayDeduct.toLocaleString()}`;
+
     const container = document.getElementById('listView');
-    if (list.length === 0) {
-      container.innerHTML = `<div class="empty-state">本月尚無紀錄<br>點擊下方「+ 記一筆」開始記錄運轉收支</div>`;
+    if (dayList.length === 0) {
+      container.innerHTML = `<div class="empty-state">當日尚無紀錄<br>點擊下方「+ 記一筆」新增此日收支</div>`;
       return;
     }
-    container.innerHTML = list.map(t => {
+
+    container.innerHTML = dayList.map(t => {
       const cat = findCategoryInfo(t.type, t.category);
       const sign = t.type === 'income' ? '+' : '-';
       const colorClass = t.type === 'income' ? 'inc-color' : 'exp-color';
+      const deductBadge = (t.type === 'income' && t.deduction > 0)
+        ? `<span class="tx-deduct-sub">回金: $${t.deduction.toLocaleString()}</span>`
+        : '';
+
       return `
         <div class="tx-item">
           <div class="tx-left">
             <div class="tx-icon">${cat.icon}</div>
             <div class="tx-info">
-              <h4>${escapeHTML(cat.name)}${t.note ? ` · ${escapeHTML(t.note)}` : ''}</h4>
-              <p>${t.date}</p>
+              <h4>${escapeHTML(cat.name)}</h4>
+              <p>${t.note ? escapeHTML(t.note) : t.date}</p>
             </div>
           </div>
           <div class="tx-right">
             <span class="tx-amount ${colorClass}">${sign}$${t.amount.toLocaleString()}</span>
-            <button class="tx-del" onclick="deleteTx(${t.id})">刪除</button>
+            ${deductBadge}
+            <div class="tx-actions">
+              <button class="tx-btn-action tx-edit" onclick="openEditModal(${t.id})">修改</button>
+              <button class="tx-btn-action tx-del" onclick="deleteTx(${t.id})">刪除</button>
+            </div>
           </div>
         </div>
       `;
@@ -787,7 +1074,7 @@
 
     const breakdownEl = document.getElementById('categoryBreakdown');
     if (breakdownItems.length === 0) {
-      breakdownEl.innerHTML = `<div class="empty-state" style="padding:20px;">本月無${chartMode === 'expense' ? '支出' : '收入'}數據</div>`;
+      breakdownEl.innerHTML = `<div class="empty-state" style="padding:20px; border:none;">本月無${chartMode === 'expense' ? '支出' : '收入'}數據</div>`;
     } else {
       breakdownEl.innerHTML = breakdownItems.map(item => `
         <div class="stat-row">
@@ -822,9 +1109,9 @@
   }
 
   function switchTab(tab) {
-    document.getElementById('tabList').classList.toggle('active', tab === 'list');
+    document.getElementById('tabCalendar').classList.toggle('active', tab === 'calendar');
     document.getElementById('tabChart').classList.toggle('active', tab === 'chart');
-    document.getElementById('listView').style.display = tab === 'list' ? 'flex' : 'none';
+    document.getElementById('calendarView').style.display = tab === 'calendar' ? 'block' : 'none';
     document.getElementById('chartView').style.display = tab === 'chart' ? 'block' : 'none';
     if (tab === 'chart') renderChart(getFilteredTransactions());
   }
@@ -841,10 +1128,6 @@
     return isNaN(val) ? 20 : val;
   }
 
-  /* 修正後的精確公式：
-     選項1 (固定回金): 總金額 - 固定回金
-     選項2 (固定回金+百回): (總金額 - 固定回金) * 10% 去尾數 + 固定回金
-  */
   function calculateFinalIncome(rawAmount, mode) {
     if (!rawAmount || rawAmount <= 0) return { final: 0, deduction: 0 };
     const fixedRet = getActiveFixedReturn();
@@ -852,10 +1135,10 @@
       let final = Math.max(0, rawAmount - fixedRet);
       return { final, deduction: rawAmount - final };
     } else if (mode === 'opt2') {
-      let base = rawAmount - fixedRet;
+      let base = Math.max(0, rawAmount - fixedRet);
       let rawDeduct = base * 0.1;
-      let cutDeduct = Math.floor(rawDeduct / 10) * 10; // 去個位數尾數
-      let deduction = cutDeduct + fixedRet; // 總回金 = 百回部分 + 固定回金 (例如 40 + 20 = 60)
+      let cutDeduct = Math.floor(rawDeduct / 10) * 10;
+      let deduction = cutDeduct + fixedRet;
       let final = Math.max(0, rawAmount - deduction);
       return { final, deduction };
     } else {
@@ -874,24 +1157,81 @@
   function updateCalcPreview() {
     const raw = parseFloat(document.getElementById('inputAmount').value) || 0;
     const res = calculateFinalIncome(raw, currentCalcMode);
-    document.getElementById('calcFormulaText').textContent = currentCalcMode === 'opt2' ? '公式：((總金額 - 固定) × 10% 去尾) + 固定' : '公式：總金額 - 固定回金';
+    let formulaLabel = '公式：其他（不扣回金）';
+    if (currentCalcMode === 'opt1') formulaLabel = '公式：總金額 - 固定回金';
+    if (currentCalcMode === 'opt2') formulaLabel = '公式：((總金額 - 固定) × 10% 去尾) + 固定';
+    document.getElementById('calcFormulaText').textContent = formulaLabel;
     document.getElementById('calcResultText').textContent = `實拿：$${res.final.toLocaleString()} (回金:$${res.deduction})`;
   }
 
   function openModal() {
+    editingTxId = null;
+    document.getElementById('modalModeLabel').textContent = '新增紀錄';
+    document.getElementById('submitTxBtn').textContent = '儲存紀錄';
     document.getElementById('modalBackdrop').classList.add('open');
     document.getElementById('inputAmount').value = '';
     document.getElementById('inputNote').value = '';
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    document.getElementById('inputDate').value = `${yyyy}-${mm}-${dd}`;
+    document.getElementById('inputDate').value = selectedDateStr || formatDateYMD(new Date());
     setTxType('income');
     setTimeout(() => document.getElementById('inputAmount').focus(), 100);
   }
 
+  function openEditModal(id) {
+    const tx = transactions.find(t => t.id === id);
+    if (!tx) return;
+
+    editingTxId = id;
+    document.getElementById('modalModeLabel').textContent = '修改紀錄';
+    document.getElementById('submitTxBtn').textContent = '更新紀錄';
+    document.getElementById('modalBackdrop').classList.add('open');
+
+    setTxType(tx.type);
+    selectedCategory = tx.category;
+    renderCategoryGrid();
+
+    document.getElementById('inputDate').value = tx.date;
+
+    // 還原原始輸入金額、回金模式與乾淨備註
+    let restoredRaw = tx.rawAmount;
+    let restoredMode = tx.calcMode;
+    let restoredFixed = tx.fixedReturn;
+    let cleanNote = tx.note || '';
+
+    // 相容舊資料格式解析
+    if (restoredRaw === undefined) {
+      const m1 = cleanNote.match(/^固定回金\$(\d+)\(原\$(\d+(?:\.\d+)?)\)(?:\s*·\s*)?(.*)$/);
+      const m2 = cleanNote.match(/^固定\+百回\(原\$(\d+(?:\.\d+)?),回\$(\d+(?:\.\d+)?)\)(?:\s*·\s*)?(.*)$/);
+      if (m1) {
+        restoredMode = 'opt1';
+        restoredFixed = parseInt(m1[1], 10);
+        restoredRaw = parseFloat(m1[2]);
+        cleanNote = m1[3] || '';
+      } else if (m2) {
+        restoredMode = 'opt2';
+        restoredRaw = parseFloat(m2[1]);
+        restoredFixed = 20;
+        cleanNote = m2[3] || '';
+      } else {
+        restoredRaw = tx.type === 'income' ? (tx.amount + (tx.deduction || 0)) : tx.amount;
+        restoredMode = (tx.deduction && tx.deduction > 0) ? 'opt1' : 'opt3';
+        restoredFixed = 20;
+      }
+    }
+
+    document.getElementById('inputAmount').value = restoredRaw;
+    document.getElementById('inputNote').value = cleanNote;
+
+    if (tx.type === 'income') {
+      const validFixed = FIXED_RETURN_OPTIONS.includes(Number(restoredFixed)) ? Number(restoredFixed) : 20;
+      document.getElementById('inputFixedReturn').value = String(validFixed);
+      setCalcMode(restoredMode || 'opt3');
+    }
+
+    setTimeout(() => document.getElementById('inputAmount').focus(), 100);
+  }
+
   function closeModal() {
+    editingTxId = null;
     document.getElementById('modalBackdrop').classList.remove('open');
   }
 
@@ -905,16 +1245,15 @@
     document.getElementById('btnTypeExp').className = type === 'expense' ? 'active-exp' : '';
     document.getElementById('calcModeBox').style.display = type === 'income' ? 'block' : 'none';
     document.getElementById('inputAmount').placeholder = type === 'income' ? '輸入總金額' : '輸入支出金額';
-    
+
     const list = categories[type] || [];
     selectedCategory = list[0]?.id || '';
     renderCategoryGrid();
-    
+
     if (type === 'income' && list[0]) {
       if (list[0].defaultCalc) setCalcMode(list[0].defaultCalc);
-      if (typeof list[0].fixedReturn === 'number') {
-        document.getElementById('inputFixedReturn').value = list[0].fixedReturn;
-      }
+      const defFixed = FIXED_RETURN_OPTIONS.includes(Number(list[0].fixedReturn)) ? Number(list[0].fixedReturn) : 20;
+      document.getElementById('inputFixedReturn').value = String(defFixed);
     }
     updateCalcPreview();
   }
@@ -937,9 +1276,8 @@
       const cat = (categories.income || []).find(c => c.id === id);
       if (cat) {
         if (cat.defaultCalc) setCalcMode(cat.defaultCalc);
-        if (typeof cat.fixedReturn === 'number') {
-          document.getElementById('inputFixedReturn').value = cat.fixedReturn;
-        }
+        const defFixed = FIXED_RETURN_OPTIONS.includes(Number(cat.fixedReturn)) ? Number(cat.fixedReturn) : 20;
+        document.getElementById('inputFixedReturn').value = String(defFixed);
       }
     }
     updateCalcPreview();
@@ -948,7 +1286,7 @@
   function saveTransaction() {
     const rawAmount = parseFloat(document.getElementById('inputAmount').value);
     const date = document.getElementById('inputDate').value;
-    let note = document.getElementById('inputNote').value.trim();
+    const rawNote = document.getElementById('inputNote').value.trim();
 
     if (!rawAmount || rawAmount <= 0) {
       alert('請輸入有效金額');
@@ -961,27 +1299,48 @@
 
     let finalAmount = rawAmount;
     let deduction = 0;
+    let note = rawNote;
+    let fixedRet = 20;
+
     if (currentTxType === 'income') {
       const res = calculateFinalIncome(rawAmount, currentCalcMode);
       finalAmount = res.final;
       deduction = res.deduction;
-      const fixedRet = getActiveFixedReturn();
+      fixedRet = getActiveFixedReturn();
       const modeTag = currentCalcMode === 'opt1' ? `固定回金$${fixedRet}(原$${rawAmount})` :
                       currentCalcMode === 'opt2' ? `固定+百回(原$${rawAmount},回$${deduction})` : '';
       if (modeTag) {
-        note = note ? `${modeTag} · ${note}` : modeTag;
+        note = rawNote ? `${modeTag} · ${rawNote}` : modeTag;
       }
     }
 
-    transactions.push({
-      id: Date.now(),
+    const txRecord = {
+      id: editingTxId || Date.now(),
       type: currentTxType,
       category: selectedCategory,
       amount: finalAmount,
       deduction: deduction,
+      rawAmount: rawAmount,
+      calcMode: currentTxType === 'income' ? currentCalcMode : null,
+      fixedReturn: currentTxType === 'income' ? fixedRet : null,
       date,
       note
-    });
+    };
+
+    if (editingTxId) {
+      const idx = transactions.findIndex(t => t.id === editingTxId);
+      if (idx !== -1) {
+        transactions[idx] = txRecord;
+      }
+    } else {
+      transactions.push(txRecord);
+    }
+
+    selectedDateStr = date;
+    const dateParts = date.split('-');
+    currentYear = parseInt(dateParts[0], 10);
+    currentMonth = parseInt(dateParts[1], 10) - 1;
+    updateMonthLabel();
 
     saveDataToCloud();
     closeModal();
@@ -1022,6 +1381,11 @@
     renderManageCatList();
   }
 
+  function buildFixedReturnOptionsHTML(selectedVal) {
+    const target = FIXED_RETURN_OPTIONS.includes(Number(selectedVal)) ? Number(selectedVal) : 20;
+    return FIXED_RETURN_OPTIONS.map(v => `<option value="${v}" ${v === target ? 'selected' : ''}>$${v}</option>`).join('');
+  }
+
   function renderManageCatList() {
     const list = categories[manageCatType] || [];
     const container = document.getElementById('manageCatList');
@@ -1038,7 +1402,9 @@
               <option value="opt2" ${cat.defaultCalc === 'opt2' ? 'selected' : ''}>2.固定+百</option>
               <option value="opt3" ${cat.defaultCalc === 'opt3' ? 'selected' : ''}>3.其他</option>
             </select>
-            <input type="number" class="manage-select" style="width:40px; text-align:center;" value="${cat.fixedReturn ?? 20}" onchange="updateCatFixedReturn(${idx}, this.value)" />
+            <select class="manage-select" onchange="updateCatFixedReturn(${idx}, this.value)">
+              ${buildFixedReturnOptionsHTML(cat.fixedReturn)}
+            </select>
           ` : ''}
           <button class="icon-action-btn" onclick="moveCategory(${idx}, -1)" ${idx === 0 ? 'disabled style="opacity:0.3"' : ''}>↑</button>
           <button class="icon-action-btn" onclick="moveCategory(${idx}, 1)" ${idx === list.length - 1 ? 'disabled style="opacity:0.3"' : ''}>↓</button>
@@ -1063,7 +1429,7 @@
     const icon = document.getElementById('newCatIcon').value.trim() || '📌';
     const name = document.getElementById('newCatName').value.trim();
     const defaultCalc = document.getElementById('newCatDefaultCalc').value;
-    const fixedReturn = parseFloat(document.getElementById('newCatFixedReturn').value) || 20;
+    const fixedReturn = parseFloat(document.getElementById('newCatFixedReturn').value);
     if (!name) {
       alert('請輸入分類名稱');
       return;
@@ -1074,7 +1440,7 @@
       name,
       icon,
       color,
-      fixedReturn
+      fixedReturn: isNaN(fixedReturn) ? 20 : fixedReturn
     };
     if (manageCatType === 'income') {
       newCat.defaultCalc = defaultCalc;
@@ -1169,26 +1535,6 @@
     .catch(() => {
       statusEl.textContent = '離線保存';
     });
-  }
-
-  function exportCSV() {
-    if (transactions.length === 0) {
-      alert('目前沒有資料可匯出');
-      return;
-    }
-    let csv = '\uFEFF日期,類型,分類,實拿金額,回金金額,備註\n';
-    transactions.forEach(t => {
-      const cat = findCategoryInfo(t.type, t.category).name;
-      const typeLabel = t.type === 'income' ? '收入' : '支出';
-      csv += `${t.date},${typeLabel},${cat},${t.amount},${t.deduction || 0},"${(t.note || '').replace(/"/g, '""')}"\n`;
-    });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `運轉帳本備份_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
   }
 
   function escapeHTML(str) {
