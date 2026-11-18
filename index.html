@@ -16,9 +16,10 @@
       --text: #F5F5F7;
       --text-muted: #8E8E93;
       --accent: #0A84FF;
-      --income: #FF453A;    /* 依需求改為紅 */
-      --expense: #30D158;   /* 依需求改為綠 */
+      --income: #FF453A;    /* 紅色 */
+      --expense: #30D158;   /* 綠色 */
       --deduct: #FF9F0A;
+      --weekend: #FF6482;   /* 粉紅色 (六日星期與數字) */
       --border: #2C2C2E;
     }
     * {
@@ -169,9 +170,10 @@
       color: var(--text-muted);
       margin-bottom: 8px;
     }
+    /* 六日星期標題改為粉紅色 */
     .cal-weekdays span:nth-child(6),
     .cal-weekdays span:nth-child(7) {
-      color: var(--expense);
+      color: var(--weekend);
     }
     .cal-grid {
       display: grid;
@@ -208,16 +210,18 @@
       font-weight: 600;
       margin-bottom: 4px;
     }
+    /* 六日日期數字改為粉紅色 */
     .cal-cell.weekend .cal-day-num {
-      color: var(--expense);
+      color: var(--weekend);
     }
     .cal-cell.today .cal-day-num {
       background: var(--accent);
       color: #fff;
     }
+    /* 行事曆金額徽章改為綠色 */
     .cal-badge-inc {
-      background: rgba(255, 69, 58, 0.2);
-      color: var(--income);
+      background: rgba(48, 209, 88, 0.2);
+      color: var(--expense);
       font-size: 10px;
       font-weight: 700;
       padding: 2px 5px;
@@ -652,7 +656,7 @@
         <span id="selectedDateTitle">2026年11月18日</span>
       </div>
       <div class="day-summary-stats">
-        <span class="inc-color" id="dayTotalIncome">當日收入: $0</span>
+        <span class="exp-color" id="dayTotalIncome">當日收入: $0</span>
         <span class="deduct-color" id="dayTotalDeduction" style="margin-left:8px;">當日回金: $0</span>
       </div>
     </div>
@@ -948,6 +952,7 @@
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
       const stat = dailyStats[cellDateStr];
+      // 行事曆金額改用綠色 (--expense)
       const incHtml = stat && stat.inc > 0 ? `<div class="cal-badge-inc">$${stat.inc.toLocaleString()}</div>` : '';
 
       html += `
@@ -992,7 +997,6 @@
     container.innerHTML = dayList.map(t => {
       const cat = findCategoryInfo(t.type, t.category);
       const sign = t.type === 'income' ? '+' : '-';
-      // 收入顯示紅色(inc-color)，支出顯示綠色(exp-color)
       const colorClass = t.type === 'income' ? 'inc-color' : 'exp-color';
       const deductBadge = (t.type === 'income' && t.deduction > 0)
         ? `<span class="tx-deduct-sub">回金: $${t.deduction.toLocaleString()}</span>`
@@ -1090,8 +1094,6 @@
             fixedReturnCount += 1;
             fixedReturnTotal += ded;
           } else if (mode === 'opt2') {
-            // 偵錯修正：opt2 (固定+百回) 扣款包含「固定回金部分」與「百回比例部分」
-            // 應正確歸類，而不是讓固定回金錯誤多算 1 筆。
             let fixedRetVal = t.fixedReturn !== undefined ? t.fixedReturn : 20;
             let percentDeduct = ded - fixedRetVal;
             if (fixedRetVal > 0) {
@@ -1450,7 +1452,7 @@
           ${manageCatType === 'income' ? `
             <select class="manage-select" onchange="updateCatDefaultCalc(${idx}, this.value)">
               <option value="opt1" ${cat.defaultCalc === 'opt1' ? 'selected' : ''}>1.固定</option>
-              <option value="opt2" ${cat.defaultCalc === 'opt2' ? 'selected' : ''}>2.固定+百回</option>
+              <option value="opt2" ${cat.defaultCalc === 'opt2' ? 'selected' : ''}>2.固定+百</option>
               <option value="opt3" ${cat.defaultCalc === 'opt3' ? 'selected' : ''}>3.其他</option>
             </select>
             <select class="manage-select" onchange="updateCatFixedReturn(${idx}, this.value)">
@@ -1523,7 +1525,7 @@
       alert('至少需保留一個分類');
       return;
     }
-    if (!confirm(`確定要刪除「${list[index].name}」嗎？`)) return;
+    if (!confirm(`確定要刪除「${list[index].name}」嗎?`)) return;
     list.splice(index, 1);
     saveDataToCloud();
     renderManageCatList();
