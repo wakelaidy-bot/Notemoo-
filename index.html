@@ -490,6 +490,12 @@
       align-items: center;
     }
 
+    .fixed-return-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
     .fixed-return-adjust {
       display: flex;
       align-items: center;
@@ -497,16 +503,15 @@
       background: #2C2C2E;
       padding: 8px 12px;
       border-radius: 10px;
-      margin-bottom: 10px;
       font-size: 13px;
     }
     .fixed-return-adjust select {
       background: #3A3A3C;
       border: none;
       color: var(--text);
-      padding: 6px 12px;
+      padding: 6px 10px;
       border-radius: 8px;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       outline: none;
     }
@@ -684,18 +689,19 @@
         </div>
       </div>
       
+      <!-- 優化後的指標區塊：整合日單均價、日均營收、回金占比 -->
       <div style="margin-top:14px; padding-top:12px; border-top: 0.5px solid var(--border); display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; text-align:center;">
         <div style="background:var(--card-elevated); padding:8px 4px; border-radius:10px;">
-          <span style="font-size:10px; color:var(--text-muted); display:block; margin-bottom:2px;" id="countLabel">月總單筆數</span>
-          <strong style="font-size:14px; font-variant-numeric: tabular-nums;" id="statTotalCount">0 筆</strong>
+          <span style="font-size:10px; color:var(--text-muted); display:block; margin-bottom:2px;" id="countLabel">總筆數 / 日單均價</span>
+          <strong style="font-size:13px; font-variant-numeric: tabular-nums;" id="statTotalCountAndAvg">0筆 | $0</strong>
         </div>
         <div style="background:var(--card-elevated); padding:8px 4px; border-radius:10px;">
-          <span style="font-size:10px; color:var(--text-muted); display:block; margin-bottom:2px;">日單平均筆數</span>
-          <strong style="font-size:14px; font-variant-numeric: tabular-nums;" id="statDailyAvgCount">0 筆</strong>
+          <span style="font-size:10px; color:var(--text-muted); display:block; margin-bottom:2px;">日均營收</span>
+          <strong style="font-size:13px; font-variant-numeric: tabular-nums;" id="statDailyAvgRevenue">$0</strong>
         </div>
         <div style="background:var(--card-elevated); padding:8px 4px; border-radius:10px;">
-          <span style="font-size:10px; color:var(--text-muted); display:block; margin-bottom:2px;">日單均價</span>
-          <strong style="font-size:14px; font-variant-numeric: tabular-nums;" id="statDailyAvgPrice">$0</strong>
+          <span style="font-size:10px; color:var(--text-muted); display:block; margin-bottom:2px;">回金占比</span>
+          <strong style="font-size:13px; font-variant-numeric: tabular-nums;" id="statDeductRatio">0%</strong>
         </div>
       </div>
     </div>
@@ -723,8 +729,9 @@
         <button id="btnTypeInc" class="active-inc" onclick="setTxType('income')">營收/收入</button>
         <button id="btnTypeExp" onclick="setTxType('expense')">支出</button>
       </div>
-      <span id="modalModeLabel" style="font-size:12px; color:var(--text-muted);">新增紀錄</span>
+      <!-- 取消移至左側，原位置改為儲存 -->
       <button style="background:none; border:none; color:var(--text-muted); font-size:15px;" onclick="closeModal()">取消</button>
+      <button style="background:none; border:none; color:var(--accent); font-size:15px; font-weight:600;" onclick="saveTransaction()">儲存</button>
     </div>
 
     <div class="cat-grid" id="categoryGrid"></div>
@@ -735,22 +742,32 @@
     </div>
 
     <div class="calc-mode-box" id="calcModeBox">
-      <div class="fixed-return-adjust">
-        <span>此筆固定回金金額：</span>
-        <select id="inputFixedReturn" onchange="updateCalcPreview()">
-          <option value="0">$0</option>
-          <option value="10">$10</option>
-          <option value="20" selected>$20</option>
-          <option value="30">$30</option>
-          <option value="40">$40</option>
-          <option value="50">$50</option>
-          <option value="60">$60</option>
-          <option value="70">$70</option>
-          <option value="80">$80</option>
-          <option value="90">$90</option>
-          <option value="100">$100</option>
-        </select>
+      <!-- 固定回金與小費左右並排 -->
+      <div class="fixed-return-row">
+        <div class="fixed-return-adjust">
+          <span>固定回金：</span>
+          <select id="inputFixedReturn" onchange="updateCalcPreview()">
+            <option value="0">$0</option>
+            <option value="10">$10</option>
+            <option value="20" selected>$20</option>
+            <option value="30">$30</option>
+            <option value="40">$40</option>
+            <option value="50">$50</option>
+            <option value="60">$60</option>
+            <option value="70">$70</option>
+            <option value="80">$80</option>
+            <option value="90">$90</option>
+            <option value="100">$100</option>
+          </select>
+        </div>
+        <div class="fixed-return-adjust">
+          <span>小費：</span>
+          <select id="inputTipFee" onchange="updateCalcPreview()">
+            <!-- 0 到 300 以 10 為單位 -->
+          </select>
+        </div>
       </div>
+      
       <div class="calc-options">
         <button type="button" class="calc-btn selected" id="calcOpt1" onclick="setCalcMode('opt1')">1.固定回金</button>
         <button type="button" class="calc-btn" id="calcOpt2" onclick="setCalcMode('opt2')">2.固定+百回</button>
@@ -767,6 +784,7 @@
       <input type="text" id="inputNote" placeholder="備註 (如: 趟數、地點)" />
     </div>
 
+    <!-- 底部保留大顆儲存按鈕維持操作習慣 -->
     <button class="submit-btn" id="submitTxBtn" onclick="saveTransaction()">儲存紀錄</button>
   </div>
 </div>
@@ -854,6 +872,17 @@
   let chartMode = 'income';
   let chartInstance = null;
 
+  // 初始化小費選單 (0 到 300 以 10 為單位)
+  function initTipSelect() {
+    const tipSelect = document.getElementById('inputTipFee');
+    if (!tipSelect) return;
+    let html = '<option value="0" selected>$0</option>';
+    for (let i = 10; i <= 300; i += 10) {
+      html += `<option value="${i}">$${i}</option>`;
+    }
+    tipSelect.innerHTML = html;
+  }
+
   function ensureDefaultCategories() {
     if (!categories.expense) categories.expense = DEFAULT_CATEGORIES.expense;
     const hasOtherDeduct = categories.expense.some(c => c.id === 'other_deduct_fee' || c.name === '其他回金');
@@ -892,9 +921,9 @@
 
   function init() {
     ensureDefaultCategories();
+    initTipSelect();
     updatePeriodLabel();
     renderAll();
-    // 立即載入本地快取渲染畫面，並呼叫雲端同步（內含 5 秒逾時保護）
     syncWithCloud();
   }
 
@@ -904,14 +933,14 @@
       document.getElementById('netProfitLabel').textContent = '本月淨利結餘';
       document.getElementById('incomeTitleLabel').textContent = '營收 / 收入';
       document.getElementById('expenseTitleLabel').textContent = '營運成本 / 支出';
-      document.getElementById('countLabel').textContent = '月總單筆數';
+      document.getElementById('countLabel').textContent = '總筆數 / 日單均價';
       document.getElementById('viewModeBadge').textContent = '月份模式';
     } else {
       document.getElementById('currentPeriodLabel').textContent = `${currentYear}年度`;
       document.getElementById('netProfitLabel').textContent = '年度淨利結餘';
       document.getElementById('incomeTitleLabel').textContent = '年度總收入';
       document.getElementById('expenseTitleLabel').textContent = '年度總支出';
-      document.getElementById('countLabel').textContent = '年度總筆數';
+      document.getElementById('countLabel').textContent = '總筆數 / 單均價';
       document.getElementById('viewModeBadge').textContent = '年度模式';
     }
   }
@@ -987,17 +1016,21 @@
     document.getElementById('totalExpense').textContent = `$${exp.toLocaleString()}`;
     document.getElementById('totalDeduction').textContent = `$${totalDeduction.toLocaleString()}`;
 
+    // 數據統計計算
     const incomeTxList = periodList.filter(t => t.type === 'income');
     const totalCount = incomeTxList.length;
-    document.getElementById('statTotalCount').textContent = `${totalCount} 筆`;
+    const dailyAvgPrice = totalCount > 0 ? Math.round(inc / totalCount) : 0;
+    document.getElementById('statTotalCountAndAvg').textContent = `${totalCount}筆 | $${dailyAvgPrice.toLocaleString()}`;
 
+    // 日均營收計算
     const uniqueDays = new Set(incomeTxList.map(t => t.date)).size;
     const activeDays = uniqueDays > 0 ? uniqueDays : 1;
-    const dailyAvgCount = (totalCount / activeDays).toFixed(1);
-    document.getElementById('statDailyAvgCount').textContent = `${dailyAvgCount} 筆/日`;
+    const dailyAvgRevenue = Math.round(inc / activeDays);
+    document.getElementById('statDailyAvgRevenue').textContent = `$${dailyAvgRevenue.toLocaleString()}`;
 
-    const dailyAvgPrice = totalCount > 0 ? Math.round(inc / totalCount) : 0;
-    document.getElementById('statDailyAvgPrice').textContent = `$${dailyAvgPrice.toLocaleString()}`;
+    // 回金占比計算 (回金總金額 / 總營收)
+    const deductRatio = inc > 0 ? ((totalDeduction / inc) * 100).toFixed(1) : 0;
+    document.getElementById('statDeductRatio').textContent = `${deductRatio}%`;
 
     renderCalendar();
     renderSelectedDayView();
@@ -1280,21 +1313,31 @@
     return isNaN(val) ? 20 : val;
   }
 
+  function getActiveTipFee() {
+    const val = parseFloat(document.getElementById('inputTipFee').value);
+    return isNaN(val) ? 0 : val;
+  }
+
   function calculateFinalIncome(rawAmount, mode) {
     if (!rawAmount || rawAmount <= 0) return { final: 0, deduction: 0 };
     const fixedRet = getActiveFixedReturn();
+    const tipFee = getActiveTipFee();
+    
+    // 計算時金額先加上小費
+    const totalWithTip = rawAmount + tipFee;
+
     if (mode === 'opt1') {
-      let final = Math.max(0, rawAmount - fixedRet);
-      return { final, deduction: rawAmount - final };
+      let final = Math.max(0, totalWithTip - fixedRet);
+      return { final, deduction: totalWithTip - final };
     } else if (mode === 'opt2') {
-      let base = Math.max(0, rawAmount - fixedRet);
+      let base = Math.max(0, totalWithTip - fixedRet);
       let rawDeduct = base * 0.1;
       let cutDeduct = Math.floor(rawDeduct / 10) * 10;
       let deduction = cutDeduct + fixedRet;
-      let final = Math.max(0, rawAmount - deduction);
+      let final = Math.max(0, totalWithTip - deduction);
       return { final, deduction };
     } else {
-      return { final: rawAmount, deduction: 0 };
+      return { final: totalWithTip, deduction: 0 };
     }
   }
 
@@ -1308,21 +1351,24 @@
 
   function updateCalcPreview() {
     const raw = parseFloat(document.getElementById('inputAmount').value) || 0;
+    const tip = getActiveTipFee();
     const res = calculateFinalIncome(raw, currentCalcMode);
-    let formulaLabel = '公式：其他（不扣回金）';
-    if (currentCalcMode === 'opt1') formulaLabel = '公式：總金額 - 固定回金';
-    if (currentCalcMode === 'opt2') formulaLabel = '公式：((總金額 - 固定) × 10% 去尾) + 固定';
+    let formulaLabel = '公式：(總額+小費) - 固定回金';
+    if (currentCalcMode === 'opt1') formulaLabel = '公式：(總額+小費) - 固定回金';
+    if (currentCalcMode === 'opt2') formulaLabel = '公式：((總額+小費 - 固定) × 10% 去尾) + 固定';
+    if (currentCalcMode === 'opt3') formulaLabel = '公式：總額 + 小費（不扣回金）';
+    
     document.getElementById('calcFormulaText').textContent = formulaLabel;
-    document.getElementById('calcResultText').textContent = `實拿：$${res.final.toLocaleString()} (回金:$${res.deduction})`;
+    document.getElementById('calcResultText').textContent = `實拿：$${res.final.toLocaleString()} (回金:$${res.deduction}${tip > 0 ? ',含小費:$'+tip : ''})`;
   }
 
   function openModal() {
     editingTxId = null;
-    document.getElementById('modalModeLabel').textContent = '新增紀錄';
-    document.getElementById('submitTxBtn').textContent = '儲存紀錄';
     document.getElementById('modalBackdrop').classList.add('open');
     document.getElementById('inputAmount').value = '';
     document.getElementById('inputNote').value = '';
+    document.getElementById('inputFixedReturn').value = '20';
+    document.getElementById('inputTipFee').value = '0';
     document.getElementById('inputDate').value = selectedDateStr || formatDateYMD(new Date());
     setTxType('income');
     setTimeout(() => document.getElementById('inputAmount').focus(), 100);
@@ -1333,8 +1379,6 @@
     if (!tx) return;
 
     editingTxId = id;
-    document.getElementById('modalModeLabel').textContent = '修改紀錄';
-    document.getElementById('submitTxBtn').textContent = '更新紀錄';
     document.getElementById('modalBackdrop').classList.add('open');
 
     setTxType(tx.type);
@@ -1349,23 +1393,9 @@
     let cleanNote = tx.note || '';
 
     if (restoredRaw === undefined) {
-      const m1 = cleanNote.match(/^固定回金\$(\d+)\(原\$(\d+(?:\.\d+)?)\)(?:\s*·\s*)?(.*)$/);
-      const m2 = cleanNote.match(/^固定\+百回\(原\$(\d+(?:\.\d+)?),回\$(\d+(?:\.\d+)?)\)(?:\s*·\s*)?(.*)$/);
-      if (m1) {
-        restoredMode = 'opt1';
-        restoredFixed = parseInt(m1[1], 10);
-        restoredRaw = parseFloat(m1[2]);
-        cleanNote = m1[3] || '';
-      } else if (m2) {
-        restoredMode = 'opt2';
-        restoredRaw = parseFloat(m2[1]);
-        restoredFixed = 20;
-        cleanNote = m2[3] || '';
-      } else {
-        restoredRaw = tx.type === 'income' ? (tx.amount + (tx.deduction || 0)) : tx.amount;
-        restoredMode = (tx.deduction && tx.deduction > 0) ? 'opt1' : 'opt3';
-        restoredFixed = 20;
-      }
+      restoredRaw = tx.type === 'income' ? (tx.amount + (tx.deduction || 0)) : tx.amount;
+      restoredMode = (tx.deduction && tx.deduction > 0) ? 'opt1' : 'opt3';
+      restoredFixed = 20;
     }
 
     document.getElementById('inputAmount').value = restoredRaw;
@@ -1374,6 +1404,7 @@
     if (tx.type === 'income') {
       const validFixed = FIXED_RETURN_OPTIONS.includes(Number(restoredFixed)) ? Number(restoredFixed) : 20;
       document.getElementById('inputFixedReturn').value = String(validFixed);
+      document.getElementById('inputTipFee').value = '0';
       setCalcMode(restoredMode || 'opt3');
     }
 
@@ -1404,6 +1435,7 @@
       if (list[0].defaultCalc) setCalcMode(list[0].defaultCalc);
       const defFixed = FIXED_RETURN_OPTIONS.includes(Number(list[0].fixedReturn)) ? Number(list[0].fixedReturn) : 20;
       document.getElementById('inputFixedReturn').value = String(defFixed);
+      document.getElementById('inputTipFee').value = '0';
     }
     updateCalcPreview();
   }
@@ -1451,14 +1483,21 @@
     let deduction = 0;
     let note = rawNote;
     let fixedRet = 20;
+    let tipFee = 0;
 
     if (currentTxType === 'income') {
+      tipFee = getActiveTipFee();
+      const effectiveRaw = rawAmount + tipFee;
       const res = calculateFinalIncome(rawAmount, currentCalcMode);
       finalAmount = res.final;
       deduction = res.deduction;
       fixedRet = getActiveFixedReturn();
-      const modeTag = currentCalcMode === 'opt1' ? `固定回金$${fixedRet}(原$${rawAmount})` :
-                      currentCalcMode === 'opt2' ? `固定+百回(原$${rawAmount},回$${deduction})` : '';
+      
+      let modeTag = currentCalcMode === 'opt1' ? `固定回金$${fixedRet}(原$${effectiveRaw})` :
+                      currentCalcMode === 'opt2' ? `固定+百回(原$${effectiveRaw},回$${deduction})` : '';
+      if (tipFee > 0) {
+        modeTag += `[含小費$${tipFee}]`;
+      }
       if (modeTag) {
         note = rawNote ? `${modeTag} · ${rawNote}` : modeTag;
       }
@@ -1635,7 +1674,6 @@
     let isDone = false;
     const cbName = 'jsonp_cb_' + Math.round(Math.random() * 100000);
     
-    // 設定 5 秒逾時保護（防止網路被 Google 阻擋時畫面死當）
     const timeoutTimer = setTimeout(() => {
       if (!isDone) {
         isDone = true;
