@@ -684,7 +684,6 @@
         </div>
       </div>
       
-      <!-- 新增：單數與均價統計區塊 -->
       <div style="margin-top:14px; padding-top:12px; border-top: 0.5px solid var(--border); display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; text-align:center;">
         <div style="background:var(--card-elevated); padding:8px 4px; border-radius:10px;">
           <span style="font-size:10px; color:var(--text-muted); display:block; margin-bottom:2px;" id="countLabel">月總單筆數</span>
@@ -728,7 +727,6 @@
       <button style="background:none; border:none; color:var(--text-muted); font-size:15px;" onclick="closeModal()">取消</button>
     </div>
 
-    <!-- 項目分類選擇 -->
     <div class="cat-grid" id="categoryGrid"></div>
 
     <div class="amount-input-box">
@@ -846,8 +844,6 @@
   let currentYear = new Date().getFullYear();
   let currentMonth = new Date().getMonth();
   let selectedDateStr = formatDateYMD(new Date());
-  
-  // 檢視模式： 'month' 或 'year'
   let viewMode = 'month';
 
   let currentTxType = 'income';
@@ -898,7 +894,8 @@
     ensureDefaultCategories();
     updatePeriodLabel();
     renderAll();
-    setTimeout(() => syncWithCloud(), 100);
+    // 立即載入本地快取渲染畫面，並呼叫雲端同步（內含 5 秒逾時保護）
+    syncWithCloud();
   }
 
   function updatePeriodLabel() {
@@ -990,13 +987,10 @@
     document.getElementById('totalExpense').textContent = `$${exp.toLocaleString()}`;
     document.getElementById('totalDeduction').textContent = `$${totalDeduction.toLocaleString()}`;
 
-    // 計算筆數與均價指標
     const incomeTxList = periodList.filter(t => t.type === 'income');
     const totalCount = incomeTxList.length;
     document.getElementById('statTotalCount').textContent = `${totalCount} 筆`;
 
-    // 計算日單平均筆數與日單均價
-    // 找出這段期間內有實際產生收入的天數（或月份模式用當月天數/年度用有紀錄天數）
     const uniqueDays = new Set(incomeTxList.map(t => t.date)).size;
     const activeDays = uniqueDays > 0 ? uniqueDays : 1;
     const dailyAvgCount = (totalCount / activeDays).toFixed(1);
@@ -1155,7 +1149,6 @@
 
     const breakdownEl = document.getElementById('categoryBreakdown');
     let htmlContent = '';
-
     const periodNameStr = viewMode === 'month' ? '本月' : '年度';
 
     if (breakdownItems.length === 0) {
@@ -1585,7 +1578,7 @@
   function addNewCategory() {
     const icon = document.getElementById('newCatIcon').value.trim() || '📌';
     const name = document.getElementById('newCatName').value.trim();
-    const defaultCalc = document.getElementById('newCatDefaultCalc'].value;
+    const defaultCalc = document.getElementById('newCatDefaultCalc').value;
     const fixedReturn = parseFloat(document.getElementById('newCatFixedReturn').value);
     if (!name) {
       alert('請輸入分類名稱');
@@ -1639,10 +1632,26 @@
     const statusEl = document.getElementById('syncStatus');
     statusEl.textContent = '同步中...';
 
+    let isDone = false;
     const cbName = 'jsonp_cb_' + Math.round(Math.random() * 100000);
+    
+    // 設定 5 秒逾時保護（防止網路被 Google 阻擋時畫面死當）
+    const timeoutTimer = setTimeout(() => {
+      if (!isDone) {
+        isDone = true;
+        statusEl.textContent = '離線運行';
+        renderAll();
+      }
+    }, 5000);
+
     window[cbName] = function(res) {
+      if (isDone) return;
+      isDone = true;
+      clearTimeout(timeoutTimer);
+
       delete window[cbName];
       if (scriptEl && scriptEl.parentNode) scriptEl.parentNode.removeChild(scriptEl);
+
       if (res && res.success) {
         if (res.records) transactions = res.records;
         if (res.categories) {
@@ -1655,12 +1664,16 @@
         statusEl.textContent = '已同步';
       } else {
         statusEl.textContent = '同步失敗';
+        renderAll();
       }
     };
 
     const scriptEl = document.createElement('script');
     scriptEl.src = `${API_URL}?action=load&callback=${cbName}&_=${Date.now()}`;
     scriptEl.onerror = function() {
+      if (isDone) return;
+      isDone = true;
+      clearTimeout(timeoutTimer);
       statusEl.textContent = '離線運行';
       renderAll();
     };
