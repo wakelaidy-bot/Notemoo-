@@ -639,8 +639,8 @@
 
 <div class="container">
   <div class="segment-control">
-    <button class="segment-btn active" id="tabCalendar" onclick="switchTab('calendar')">行事曆明細</button>
-    <button class="segment-btn" id="tabChart" onclick="switchTab('chart')">分類統計</button>
+    <button class="segment-btn active" id="tabCalendar" onclick="switchTab('calendar')">日曆明細</button>
+    <button class="segment-btn" id="tabChart" onclick="switchTab('chart')">營運分析</button>
   </div>
 
   <!-- 首頁：月行事曆 + 當日收支明細 -->
@@ -666,7 +666,7 @@
     <div id="listView" class="tx-list"></div>
   </div>
 
-  <!-- 分類統計分頁 -->
+  <!-- 營運分析分頁 -->
   <div id="chartView" style="display:none;">
     <div class="summary-card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
@@ -701,18 +701,15 @@
         </div>
       </div>
       
-      <div style="margin-top:14px; padding-top:12px; border-top: 0.5px solid var(--border); display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; text-align:center;">
+      <!-- 優化後的指標區塊：日單均價與日均營收（移除總筆數與回金占比） -->
+      <div style="margin-top:14px; padding-top:12px; border-top: 0.5px solid var(--border); display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; text-align:center;">
         <div style="background:var(--card-elevated); padding:8px 4px; border-radius:10px;">
-          <span style="font-size:10px; color:var(--text-muted); display:block; margin-bottom:2px;" id="countLabel">總筆數 / 日單均價</span>
-          <strong style="font-size:13px; font-variant-numeric: tabular-nums;" id="statTotalCountAndAvg">0筆 | $0</strong>
+          <span style="font-size:10px; color:var(--text-muted); display:block; margin-bottom:2px;" id="countLabel">日單均價</span>
+          <strong style="font-size:13px; font-variant-numeric: tabular-nums;" id="statDailyAvgPrice">$0</strong>
         </div>
         <div style="background:var(--card-elevated); padding:8px 4px; border-radius:10px;">
           <span style="font-size:10px; color:var(--text-muted); display:block; margin-bottom:2px;">日均營收</span>
           <strong style="font-size:13px; font-variant-numeric: tabular-nums;" id="statDailyAvgRevenue">$0</strong>
-        </div>
-        <div style="background:var(--card-elevated); padding:8px 4px; border-radius:10px;">
-          <span style="font-size:10px; color:var(--text-muted); display:block; margin-bottom:2px;">回金占比</span>
-          <strong style="font-size:13px; font-variant-numeric: tabular-nums;" id="statDeductRatio">0%</strong>
         </div>
       </div>
     </div>
@@ -744,11 +741,11 @@
   <div class="bottom-sheet">
     <div class="sheet-header">
       <div class="type-toggle">
-        <button id="btnTypeInc" class="active-inc" onclick="setTxType('income')">營收/收入</button>
+        <button id="btnTypeInc" class="active-inc" onclick="setTxType('income')">收入</button>
         <button id="btnTypeExp" onclick="setTxType('expense')">支出</button>
       </div>
+      <!-- 取消在左側，右上角儲存按鈕已移除 -->
       <button style="background:none; border:none; color:var(--text-muted); font-size:15px;" onclick="closeModal()">取消</button>
-      <button style="background:none; border:none; color:var(--accent); font-size:15px; font-weight:600;" onclick="saveTransaction()">儲存</button>
     </div>
 
     <div class="cat-grid" id="categoryGrid"></div>
@@ -950,14 +947,14 @@
       document.getElementById('netProfitLabel').textContent = '本月淨利結餘';
       document.getElementById('incomeTitleLabel').textContent = '營收 / 收入';
       document.getElementById('expenseTitleLabel').textContent = '營運成本 / 支出';
-      document.getElementById('countLabel').textContent = '總筆數 / 日單均價';
+      document.getElementById('countLabel').textContent = '日單均價';
       document.getElementById('viewModeBadge').textContent = '月份模式';
     } else {
       document.getElementById('currentPeriodLabel').textContent = `${currentYear}年度`;
       document.getElementById('netProfitLabel').textContent = '年度淨利結餘';
       document.getElementById('incomeTitleLabel').textContent = '年度總收入';
       document.getElementById('expenseTitleLabel').textContent = '年度總支出';
-      document.getElementById('countLabel').textContent = '總筆數 / 單均價';
+      document.getElementById('countLabel').textContent = '單均價';
       document.getElementById('viewModeBadge').textContent = '年度模式';
     }
   }
@@ -1020,7 +1017,7 @@
         if (viewMode === 'month') targets.month = val;
         else targets.year = val;
         localStorage.setItem('driver_targets_v1', JSON.stringify(targets));
-        saveDataToCloud(); // 儲存目標至雲端
+        saveDataToCloud();
         renderAll();
       } else {
         alert('請輸入有效的金額');
@@ -1061,15 +1058,12 @@
     const incomeTxList = periodList.filter(t => t.type === 'income');
     const totalCount = incomeTxList.length;
     const dailyAvgPrice = totalCount > 0 ? Math.round(inc / totalCount) : 0;
-    document.getElementById('statTotalCountAndAvg').textContent = `${totalCount}筆 | $${dailyAvgPrice.toLocaleString()}`;
+    document.getElementById('statDailyAvgPrice').textContent = `$${dailyAvgPrice.toLocaleString()}`;
 
     const uniqueDays = new Set(incomeTxList.map(t => t.date)).size;
     const activeDays = uniqueDays > 0 ? uniqueDays : 1;
     const dailyAvgRevenue = Math.round(inc / activeDays);
     document.getElementById('statDailyAvgRevenue').textContent = `$${dailyAvgRevenue.toLocaleString()}`;
-
-    const deductRatio = inc > 0 ? ((totalDeduction / inc) * 100).toFixed(1) : 0;
-    document.getElementById('statDeductRatio').textContent = `${deductRatio}%`;
 
     renderCalendar();
     renderSelectedDayView();
