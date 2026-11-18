@@ -674,6 +674,18 @@
         <button class="header-btn" onclick="toggleViewMode()" style="font-size:11px; padding:2px 8px;">切換: <span id="viewModeBadge">月份模式</span></button>
       </div>
       <div class="net-amount" id="netAmount">$0</div>
+      
+      <!-- 目標進度條區塊 -->
+      <div style="margin-bottom:14px; background:var(--card-elevated); padding:10px 12px; border-radius:12px; cursor:pointer;" onclick="editTarget()" title="點擊修改目標金額">
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; margin-bottom:6px;">
+          <span id="targetLabel" style="color:var(--text-muted);">淨利目標: $60,000</span>
+          <span id="targetPct" style="font-weight:700; color:var(--accent);">0%</span>
+        </div>
+        <div style="background:var(--border); height:8px; border-radius:4px; overflow:hidden;">
+          <div id="targetProgressBar" style="background:var(--accent); height:100%; width:0%; border-radius:4px; transition: width 0.3s;"></div>
+        </div>
+      </div>
+
       <div class="sub-metrics">
         <div class="metric-box">
           <span id="incomeTitleLabel">營收 / 收入</span>
@@ -689,7 +701,6 @@
         </div>
       </div>
       
-      <!-- 優化後的指標區塊：整合日單均價、日均營收、回金占比 -->
       <div style="margin-top:14px; padding-top:12px; border-top: 0.5px solid var(--border); display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; text-align:center;">
         <div style="background:var(--card-elevated); padding:8px 4px; border-radius:10px;">
           <span style="font-size:10px; color:var(--text-muted); display:block; margin-bottom:2px;" id="countLabel">總筆數 / 日單均價</span>
@@ -711,6 +722,13 @@
         <span style="font-size:14px; font-weight:600;" id="chartTitle">收入圓餅圖與統計</span>
         <button class="header-btn" onclick="toggleChartType()" id="chartToggleBtn">切換支出統計</button>
       </div>
+      
+      <!-- 支出圓餅圖檢視模式切換 (全部支出 vs 純營運成本) -->
+      <div id="expenseChartSubToggle" style="display:none; gap:6px; margin-bottom:12px;">
+        <button class="header-btn" id="expSubAllBtn" style="font-size:11px; padding:4px 10px; background:var(--accent); color:#fff;" onclick="setExpenseViewMode('all')">全部支出</button>
+        <button class="header-btn" id="expSubOpBtn" style="font-size:11px; padding:4px 10px;" onclick="setExpenseViewMode('op')">純營運成本(不含回金)</button>
+      </div>
+
       <div class="chart-wrapper">
         <canvas id="categoryChart"></canvas>
       </div>
@@ -729,7 +747,6 @@
         <button id="btnTypeInc" class="active-inc" onclick="setTxType('income')">營收/收入</button>
         <button id="btnTypeExp" onclick="setTxType('expense')">支出</button>
       </div>
-      <!-- 取消移至左側，原位置改為儲存 -->
       <button style="background:none; border:none; color:var(--text-muted); font-size:15px;" onclick="closeModal()">取消</button>
       <button style="background:none; border:none; color:var(--accent); font-size:15px; font-weight:600;" onclick="saveTransaction()">儲存</button>
     </div>
@@ -742,7 +759,6 @@
     </div>
 
     <div class="calc-mode-box" id="calcModeBox">
-      <!-- 固定回金與小費左右並排 -->
       <div class="fixed-return-row">
         <div class="fixed-return-adjust">
           <span>固定回金：</span>
@@ -784,7 +800,6 @@
       <input type="text" id="inputNote" placeholder="備註 (如: 趟數、地點)" />
     </div>
 
-    <!-- 底部保留大顆儲存按鈕維持操作習慣 -->
     <button class="submit-btn" id="submitTxBtn" onclick="saveTransaction()">儲存紀錄</button>
   </div>
 </div>
@@ -859,10 +874,13 @@
 
   let categories = JSON.parse(localStorage.getItem('driver_categories_v1')) || DEFAULT_CATEGORIES;
   let transactions = JSON.parse(localStorage.getItem('driver_ledger_v1')) || [];
+  let targets = JSON.parse(localStorage.getItem('driver_targets_v1')) || { month: 60000, year: 800000 };
+
   let currentYear = new Date().getFullYear();
   let currentMonth = new Date().getMonth();
   let selectedDateStr = formatDateYMD(new Date());
   let viewMode = 'month';
+  let expenseViewMode = 'all';
 
   let currentTxType = 'income';
   let selectedCategory = categories.income[0]?.id || 'fare';
@@ -872,7 +890,6 @@
   let chartMode = 'income';
   let chartInstance = null;
 
-  // 初始化小費選單 (0 到 300 以 10 為單位)
   function initTipSelect() {
     const tipSelect = document.getElementById('inputTipFee');
     if (!tipSelect) return;
@@ -993,6 +1010,24 @@
     return list.find(c => c.id === catId) || { name: '已刪除分類', icon: '📝', color: '#8E8E93', fixedReturn: 20 };
   }
 
+  function editTarget() {
+    const typeName = viewMode === 'month' ? '月淨利' : '年度淨利';
+    const currentVal = viewMode === 'month' ? targets.month : targets.year;
+    const input = prompt(`請輸入新的${typeName}目標金額 ($):`, currentVal);
+    if (input !== null) {
+      const val = parseFloat(input);
+      if (!isNaN(val) && val >= 0) {
+        if (viewMode === 'month') targets.month = val;
+        else targets.year = val;
+        localStorage.setItem('driver_targets_v1', JSON.stringify(targets));
+        saveDataToCloud(); // 儲存目標至雲端
+        renderAll();
+      } else {
+        alert('請輸入有效的金額');
+      }
+    }
+  }
+
   function renderAll() {
     const periodList = getFilteredTransactions();
     let inc = 0, exp = 0, totalDeduction = 0;
@@ -1016,19 +1051,23 @@
     document.getElementById('totalExpense').textContent = `$${exp.toLocaleString()}`;
     document.getElementById('totalDeduction').textContent = `$${totalDeduction.toLocaleString()}`;
 
-    // 數據統計計算
+    const targetVal = viewMode === 'month' ? targets.month : targets.year;
+    const targetPct = targetVal > 0 ? ((net / targetVal) * 100).toFixed(1) : 0;
+    const displayPct = net > 0 ? Math.min(100, targetPct) : 0;
+    document.getElementById('targetLabel').textContent = `${viewMode === 'month' ? '本月' : '年度'}淨利目標 ($${targetVal.toLocaleString()})：達成率 ${targetPct}%`;
+    document.getElementById('targetPct').textContent = `${targetPct}%`;
+    document.getElementById('targetProgressBar').style.width = `${displayPct}%`;
+
     const incomeTxList = periodList.filter(t => t.type === 'income');
     const totalCount = incomeTxList.length;
     const dailyAvgPrice = totalCount > 0 ? Math.round(inc / totalCount) : 0;
     document.getElementById('statTotalCountAndAvg').textContent = `${totalCount}筆 | $${dailyAvgPrice.toLocaleString()}`;
 
-    // 日均營收計算
     const uniqueDays = new Set(incomeTxList.map(t => t.date)).size;
     const activeDays = uniqueDays > 0 ? uniqueDays : 1;
     const dailyAvgRevenue = Math.round(inc / activeDays);
     document.getElementById('statDailyAvgRevenue').textContent = `$${dailyAvgRevenue.toLocaleString()}`;
 
-    // 回金占比計算 (回金總金額 / 總營收)
     const deductRatio = inc > 0 ? ((totalDeduction / inc) * 100).toFixed(1) : 0;
     document.getElementById('statDeductRatio').textContent = `${deductRatio}%`;
 
@@ -1136,8 +1175,29 @@
     }).join('');
   }
 
+  function setExpenseViewMode(mode) {
+    expenseViewMode = mode;
+    document.getElementById('expSubAllBtn').style.background = mode === 'all' ? 'var(--accent)' : 'var(--card-elevated)';
+    document.getElementById('expSubAllBtn').style.color = mode === 'all' ? '#fff' : 'var(--text)';
+    document.getElementById('expSubOpBtn').style.background = mode === 'op' ? 'var(--accent)' : 'var(--card-elevated)';
+    document.getElementById('expSubOpBtn').style.color = mode === 'op' ? '#fff' : 'var(--text)';
+    renderChart(getFilteredTransactions());
+  }
+
   function renderChart(list) {
-    const filtered = list.filter(t => t.type === chartMode);
+    const subToggleEl = document.getElementById('expenseChartSubToggle');
+    if (chartMode === 'expense') {
+      subToggleEl.style.display = 'flex';
+    } else {
+      subToggleEl.style.display = 'none';
+    }
+
+    let filtered = list.filter(t => t.type === chartMode);
+    
+    if (chartMode === 'expense' && expenseViewMode === 'op') {
+      filtered = filtered.filter(t => !isFixedDeductExpense(t) && !isOtherDeductExpense(t) && t.category !== 'deduct_fee' && t.category !== 'other_deduct_fee');
+    }
+
     const catList = categories[chartMode] || [];
     const totals = {};
     const counts = {};
@@ -1156,6 +1216,9 @@
     const breakdownItems = [];
 
     catList.forEach(cat => {
+      if (chartMode === 'expense' && expenseViewMode === 'op' && (cat.id === 'deduct_fee' || cat.id === 'other_deduct_fee')) {
+        return;
+      }
       if (totals[cat.id]) {
         labels.push(cat.name);
         data.push(totals[cat.id]);
@@ -1185,7 +1248,7 @@
     const periodNameStr = viewMode === 'month' ? '本月' : '年度';
 
     if (breakdownItems.length === 0) {
-      htmlContent = `<div class="empty-state" style="padding:20px; border:none;">${periodNameStr}無${chartMode === 'expense' ? '支出' : '收入'}數據</div>`;
+      htmlContent = `<div class="empty-state" style="padding:20px; border:none;">${periodNameStr}無${chartMode === 'expense' ? (expenseViewMode==='op'?'純營運成本':'支出') : '收入'}數據</div>`;
     } else {
       const rowsHtml = breakdownItems.map(item => `
         <div class="stat-row">
@@ -1238,7 +1301,7 @@
         }
       });
 
-      filtered.forEach(t => {
+      list.filter(t => t.type === 'expense').forEach(t => {
         if (isFixedDeductExpense(t)) {
           fixedReturnCount += 1;
           fixedReturnTotal += t.amount;
@@ -1322,8 +1385,6 @@
     if (!rawAmount || rawAmount <= 0) return { final: 0, deduction: 0 };
     const fixedRet = getActiveFixedReturn();
     const tipFee = getActiveTipFee();
-    
-    // 計算時金額先加上小費
     const totalWithTip = rawAmount + tipFee;
 
     if (mode === 'opt1') {
@@ -1696,6 +1757,10 @@
           categories = res.categories;
           ensureDefaultCategories();
         }
+        if (res.targets) {
+          targets = res.targets;
+          localStorage.setItem('driver_targets_v1', JSON.stringify(targets));
+        }
         localStorage.setItem('driver_ledger_v1', JSON.stringify(transactions));
         localStorage.setItem('driver_categories_v1', JSON.stringify(categories));
         renderAll();
@@ -1721,6 +1786,7 @@
   function saveDataToCloud() {
     localStorage.setItem('driver_ledger_v1', JSON.stringify(transactions));
     localStorage.setItem('driver_categories_v1', JSON.stringify(categories));
+    localStorage.setItem('driver_targets_v1', JSON.stringify(targets));
     const statusEl = document.getElementById('syncStatus');
     statusEl.textContent = '上傳中...';
 
@@ -1728,7 +1794,8 @@
       action: 'save',
       data: {
         records: transactions,
-        categories: categories
+        categories: categories,
+        targets: targets
       }
     };
 
