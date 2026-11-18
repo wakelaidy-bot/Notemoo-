@@ -807,6 +807,7 @@
     ],
     expense: [
       { id: 'deduct_fee', name: '回金', icon: '🔄', color: '#FF9F0A', defaultCalc: 'opt3', fixedReturn: 20 },
+      { id: 'other_deduct_fee', name: '其他回金', icon: '🔁', color: '#FFB340', defaultCalc: 'opt3', fixedReturn: 20 },
       { id: 'fuel', name: '加油/充電', icon: '⛽', color: '#30D158', defaultCalc: 'opt3', fixedReturn: 20 },
       { id: 'food', name: '餐飲補給', icon: '🍱', color: '#32D74B', defaultCalc: 'opt3', fixedReturn: 20 },
       { id: 'maint', name: '保養維修', icon: '🔧', color: '#64D2FF', defaultCalc: 'opt3', fixedReturn: 20 },
@@ -834,6 +835,36 @@
   let chartMode = 'income';
   let chartInstance = null;
 
+  // 確保舊資料載入時也有「其他回金」支出分類
+  function ensureDefaultCategories() {
+    if (!categories.expense) categories.expense = DEFAULT_CATEGORIES.expense;
+    const hasOtherDeduct = categories.expense.some(c => c.id === 'other_deduct_fee' || c.name === '其他回金');
+    if (!hasOtherDeduct) {
+      const deductIdx = categories.expense.findIndex(c => c.id === 'deduct_fee');
+      const newItem = { id: 'other_deduct_fee', name: '其他回金', icon: '🔁', color: '#FFB340', defaultCalc: 'opt3', fixedReturn: 20 };
+      if (deductIdx !== -1) {
+        categories.expense.splice(deductIdx + 1, 0, newItem);
+      } else {
+        categories.expense.unshift(newItem);
+      }
+      localStorage.setItem('driver_categories_v1', JSON.stringify(categories));
+    }
+  }
+
+  function isOtherDeductExpense(tx) {
+    if (tx.type !== 'expense') return false;
+    if (tx.category === 'other_deduct_fee') return true;
+    const cat = findCategoryInfo('expense', tx.category);
+    return cat && cat.name === '其他回金';
+  }
+
+  function isFixedDeductExpense(tx) {
+    if (tx.type !== 'expense') return false;
+    if (tx.category === 'deduct_fee') return true;
+    const cat = findCategoryInfo('expense', tx.category);
+    return cat && cat.name === '回金';
+  }
+
   function formatDateYMD(dateObj) {
     const y = dateObj.getFullYear();
     const m = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -842,6 +873,7 @@
   }
 
   function init() {
+    ensureDefaultCategories();
     updateMonthLabel();
     renderAll();
     setTimeout(() => syncWithCloud(), 100);
@@ -902,7 +934,7 @@
         totalDeduction += (t.deduction || 0);
       } else {
         exp += t.amount;
-        if (t.category === 'deduct_fee' || t.calcMode === 'opt3') {
+        if (isFixedDeductExpense(t) || isOtherDeductExpense(t)) {
           totalDeduction += t.amount;
         }
       }
@@ -975,7 +1007,7 @@
       if (t.type === 'income') {
         dayInc += t.amount;
         dayDeduct += (t.deduction || 0);
-      } else if (t.category === 'deduct_fee' || t.calcMode === 'opt3') {
+      } else if (isFixedDeductExpense(t) || isOtherDeductExpense(t)) {
         dayDeduct += t.amount;
       }
     });
@@ -1094,6 +1126,7 @@
       let percentReturnCount = 0, percentReturnTotal = 0;
       let otherDeductCount = 0, otherDeductTotal = 0;
 
+      // 1. 統計收入單中內含的回金
       list.filter(t => t.type === 'income').forEach(t => {
         let mode = t.calcMode;
         let ded = t.deduction || 0;
@@ -1120,8 +1153,12 @@
         }
       });
 
+      // 2. 統計支出單中選「回金」或「其他回金」的項目（同時也保留在上方支出項目明細中）
       filtered.forEach(t => {
-        if (t.category === 'deduct_fee' || t.calcMode === 'opt3') {
+        if (isFixedDeductExpense(t)) {
+          fixedReturnCount += 1;
+          fixedReturnTotal += t.amount;
+        } else if (isOtherDeductExpense(t)) {
           otherDeductCount += 1;
           otherDeductTotal += t.amount;
         }
@@ -1139,7 +1176,7 @@
             <strong class="deduct-color" style="font-variant-numeric: tabular-nums;">$${percentReturnTotal.toLocaleString()}</strong>
           </div>
           <div class="stat-row">
-            <div>📦 其他回金 <span style="color:var(--text-muted); font-size:12px;">(${otherDeductCount}筆)</span></div>
+            <div>🔁 其他回金 <span style="color:var(--text-muted); font-size:12px;">(${otherDeductCount}筆)</span></div>
             <strong class="deduct-color" style="font-variant-numeric: tabular-nums;">$${otherDeductTotal.toLocaleString()}</strong>
           </div>
         </div>
@@ -1470,7 +1507,7 @@
           ` : ''}
           <button class="icon-action-btn" onclick="moveCategory(${idx}, -1)" ${idx === 0 ? 'disabled style="opacity:0.3"' : ''}>↑</button>
           <button class="icon-action-btn" onclick="moveCategory(${idx}, 1)" ${idx === list.length - 1 ? 'disabled style="opacity:0.3"' : ''}>↓</button>
-          ${cat.id !== 'deduct_fee' ? `<button class="icon-action-btn del" onclick="removeCategory(${idx})">✕</button>` : ''}
+          ${cat.id !== 'deduct_fee' && cat.id !== 'other_deduct_fee' ? `<button class="icon-action-btn del" onclick="removeCategory(${idx})">✕</button>` : ''}
         </div>
       </div>
     `).join('');
@@ -1526,8 +1563,8 @@
 
   function removeCategory(index) {
     const list = categories[manageCatType];
-    if (list[index].id === 'deduct_fee') {
-      alert('「回金」為系統必要支出項目，不可刪除');
+    if (list[index].id === 'deduct_fee' || list[index].id === 'other_deduct_fee') {
+      alert('此為系統必要回金支出項目，不可刪除');
       return;
     }
     if (list.length <= 1) {
@@ -1550,7 +1587,10 @@
       if (scriptEl && scriptEl.parentNode) scriptEl.parentNode.removeChild(scriptEl);
       if (res && res.success) {
         if (res.records) transactions = res.records;
-        if (res.categories) categories = res.categories;
+        if (res.categories) {
+          categories = res.categories;
+          ensureDefaultCategories();
+        }
         localStorage.setItem('driver_ledger_v1', JSON.stringify(transactions));
         localStorage.setItem('driver_categories_v1', JSON.stringify(categories));
         renderAll();
