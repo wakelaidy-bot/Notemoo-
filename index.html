@@ -19,6 +19,7 @@
       --income: #FF453A;    /* 紅色 */
       --expense: #30D158;   /* 綠色 */
       --deduct: #FF9F0A;
+      --day-income: #64D2FF;/* 當日收入專屬柔和亮藍色，辨識度高且清爽 */
       --weekend: #FF6482;   /* 粉紅色 (六日星期與數字) */
       --border: #2C2C2E;
     }
@@ -129,6 +130,7 @@
     .inc-color { color: var(--income); }
     .exp-color { color: var(--expense); }
     .deduct-color { color: var(--deduct); }
+    .day-inc-color { color: var(--day-income); }
 
     .segment-control {
       display: grid;
@@ -170,7 +172,6 @@
       color: var(--text-muted);
       margin-bottom: 8px;
     }
-    /* 六日星期標題改為粉紅色 */
     .cal-weekdays span:nth-child(6),
     .cal-weekdays span:nth-child(7) {
       color: var(--weekend);
@@ -210,7 +211,6 @@
       font-weight: 600;
       margin-bottom: 4px;
     }
-    /* 六日日期數字改為粉紅色 */
     .cal-cell.weekend .cal-day-num {
       color: var(--weekend);
     }
@@ -218,10 +218,9 @@
       background: var(--accent);
       color: #fff;
     }
-    /* 行事曆金額徽章改為綠色 */
     .cal-badge-inc {
-      background: rgba(48, 209, 88, 0.2);
-      color: var(--expense);
+      background: rgba(100, 210, 255, 0.18);
+      color: var(--day-income);
       font-size: 10px;
       font-weight: 700;
       padding: 2px 5px;
@@ -656,7 +655,8 @@
         <span id="selectedDateTitle">2026年11月18日</span>
       </div>
       <div class="day-summary-stats">
-        <span class="exp-color" id="dayTotalIncome">當日收入: $0</span>
+        <!-- 當日收入採用柔和亮藍色，避開綠色 -->
+        <span class="day-inc-color" id="dayTotalIncome">當日收入: $0</span>
         <span class="deduct-color" id="dayTotalDeduction" style="margin-left:8px;">當日回金: $0</span>
       </div>
     </div>
@@ -952,7 +952,6 @@
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
       const stat = dailyStats[cellDateStr];
-      // 行事曆金額改用綠色 (--expense)
       const incHtml = stat && stat.inc > 0 ? `<div class="cal-badge-inc">$${stat.inc.toLocaleString()}</div>` : '';
 
       html += `
@@ -1030,6 +1029,7 @@
     const totals = {};
     const counts = {};
     let grandTotal = 0;
+    let totalCount = filtered.length;
 
     filtered.forEach(t => {
       totals[t.category] = (totals[t.category] || 0) + t.amount;
@@ -1046,10 +1046,12 @@
       if (totals[cat.id]) {
         labels.push(cat.name);
         data.push(totals[cat.id]);
-        colors.push(cat.color || '#0A84FF');
+        // 圓餅圖顏色與分類設定顏色一致
+        const catColor = cat.color || '#0A84FF';
+        colors.push(catColor);
         const pct = grandTotal > 0 ? ((totals[cat.id] / grandTotal) * 100).toFixed(1) : 0;
         const count = counts[cat.id] || 0;
-        breakdownItems.push({ ...cat, amount: totals[cat.id], pct, count });
+        breakdownItems.push({ ...cat, amount: totals[cat.id], pct, count, color: catColor });
         delete totals[cat.id];
         delete counts[cat.id];
       }
@@ -1061,7 +1063,7 @@
       labels.push('其他歷史分類');
       data.push(totals[unknownId]);
       colors.push('#8E8E93');
-      breakdownItems.push({ name: '其他歷史分類', icon: '📝', amount: totals[unknownId], pct, count });
+      breakdownItems.push({ name: '其他歷史分類', icon: '📝', amount: totals[unknownId], pct, count, color: '#8E8E93' });
     });
 
     breakdownItems.sort((a, b) => b.amount - a.amount);
@@ -1072,12 +1074,25 @@
     if (breakdownItems.length === 0) {
       htmlContent = `<div class="empty-state" style="padding:20px; border:none;">本月無${chartMode === 'expense' ? '支出' : '收入'}數據</div>`;
     } else {
-      htmlContent = breakdownItems.map(item => `
+      // 收入統計顯示項目圓點顏色與圓餅圖一致，且最下方顯示總筆數；支出統計不顯示總筆數
+      const rowsHtml = breakdownItems.map(item => `
         <div class="stat-row">
-          <div>${item.icon} ${escapeHTML(item.name)} <span style="color:var(--text-muted); font-size:12px;">(${item.pct}% · ${item.count}筆)</span></div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="width:10px; height:10px; border-radius:50%; background:${item.color}; display:inline-block; flex-shrink:0;"></span>
+            <span>${item.icon} ${escapeHTML(item.name)} <span style="color:var(--text-muted); font-size:12px;">(${item.pct}% · ${item.count}筆)</span></span>
+          </div>
           <strong style="font-variant-numeric: tabular-nums;">$${item.amount.toLocaleString()}</strong>
         </div>
       `).join('');
+
+      htmlContent = rowsHtml;
+      if (chartMode === 'income') {
+        htmlContent += `
+          <div style="margin-top:12px; padding-top:10px; border-top: 0.5px solid var(--border); text-align:right; font-size:13px; color:var(--text-muted);">
+            本月收入總筆數：<strong>${totalCount}</strong> 筆
+          </div>
+        `;
+      }
     }
 
     if (chartMode === 'expense') {
@@ -1481,7 +1496,7 @@
   function addNewCategory() {
     const icon = document.getElementById('newCatIcon').value.trim() || '📌';
     const name = document.getElementById('newCatName').value.trim();
-    const defaultCalc = document.getElementById('newCatDefaultCalc').value;
+    const defaultCalc = document.getElementById('newCatDefaultCalc'].value;
     const fixedReturn = parseFloat(document.getElementById('newCatFixedReturn').value);
     if (!name) {
       alert('請輸入分類名稱');
@@ -1525,7 +1540,7 @@
       alert('至少需保留一個分類');
       return;
     }
-    if (!confirm(`確定要刪除「${list[index].name}」嗎?`)) return;
+    if (!confirm(`確定要刪除「${list[index].name}」嗎？`)) return;
     list.splice(index, 1);
     saveDataToCloud();
     renderManageCatList();
