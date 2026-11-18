@@ -16,8 +16,8 @@
       --text: #F5F5F7;
       --text-muted: #8E8E93;
       --accent: #0A84FF;
-      --income: #30D158;
-      --expense: #FF453A;
+      --income: #FF453A;    /* 依需求改為紅 */
+      --expense: #30D158;   /* 依需求改為綠 */
       --deduct: #FF9F0A;
       --border: #2C2C2E;
     }
@@ -216,7 +216,7 @@
       color: #fff;
     }
     .cal-badge-inc {
-      background: rgba(48, 209, 88, 0.22);
+      background: rgba(255, 69, 58, 0.2);
       color: var(--income);
       font-size: 10px;
       font-weight: 700;
@@ -427,8 +427,8 @@
       font-size: 14px;
       font-weight: 600;
     }
-    .type-toggle button.active-exp { background: var(--expense); color: #fff; }
-    .type-toggle button.active-inc { background: var(--income); color: #000; }
+    .type-toggle button.active-exp { background: var(--expense); color: #000; }
+    .type-toggle button.active-inc { background: var(--income); color: #fff; }
 
     .amount-input-box {
       background: #2C2C2E;
@@ -475,13 +475,13 @@
     }
     .calc-btn.selected {
       border-color: var(--income);
-      background: rgba(48, 209, 88, 0.15);
+      background: rgba(255, 69, 58, 0.15);
       color: var(--income);
     }
     .calc-preview {
       font-size: 12px;
       color: var(--income);
-      background: rgba(48, 209, 88, 0.08);
+      background: rgba(255, 69, 58, 0.08);
       padding: 8px 12px;
       border-radius: 8px;
       display: flex;
@@ -652,7 +652,8 @@
         <span id="selectedDateTitle">2026年11月18日</span>
       </div>
       <div class="day-summary-stats">
-        <span class="inc-color" id="dayTotalIncome">總收入: $0</span>
+        <span class="inc-color" id="dayTotalIncome">當日收入: $0</span>
+        <span class="deduct-color" id="dayTotalDeduction" style="margin-left:8px;">當日回金: $0</span>
       </div>
     </div>
 
@@ -707,7 +708,7 @@
       <button style="background:none; border:none; color:var(--text-muted); font-size:15px;" onclick="closeModal()">取消</button>
     </div>
 
-    <!-- 項目分類移至輸入總金額上方 -->
+    <!-- 項目分類選擇 -->
     <div class="cat-grid" id="categoryGrid"></div>
 
     <div class="amount-input-box">
@@ -797,27 +798,27 @@
 
   const DEFAULT_CATEGORIES = {
     income: [
-      { id: 'fare', name: '車資/趟次', icon: '🚕', color: '#30D158', defaultCalc: 'opt2', fixedReturn: 20 },
-      { id: 'delivery', name: '外送/貨運', icon: '🛵', color: '#32D74B', defaultCalc: 'opt1', fixedReturn: 20 },
+      { id: 'fare', name: '車資/趟次', icon: '🚕', color: '#FF453A', defaultCalc: 'opt2', fixedReturn: 20 },
+      { id: 'delivery', name: '外送/貨運', icon: '🛵', color: '#FF6961', defaultCalc: 'opt1', fixedReturn: 20 },
       { id: 'bonus', name: '達標獎金', icon: '🏆', color: '#FFD60A', defaultCalc: 'opt3', fixedReturn: 20 },
-      { id: 'tip', name: '小費/額外', icon: '💵', color: '#64D2FF', defaultCalc: 'opt3', fixedReturn: 20 },
+      { id: 'tip', name: '小費/額外', icon: '💵', color: '#BF5AF2', defaultCalc: 'opt3', fixedReturn: 20 },
       { id: 'salary', name: '固定薪資', icon: '💼', color: '#0A84FF', defaultCalc: 'opt3', fixedReturn: 20 },
-      { id: 'other_inc', name: '其他收入', icon: '✨', color: '#BF5AF2', defaultCalc: 'opt3', fixedReturn: 20 }
+      { id: 'other_inc', name: '其他收入', icon: '✨', color: '#AC8E68', defaultCalc: 'opt3', fixedReturn: 20 }
     ],
     expense: [
       { id: 'deduct_fee', name: '回金', icon: '🔄', color: '#FF9F0A', defaultCalc: 'opt3', fixedReturn: 20 },
-      { id: 'fuel', name: '加油/充電', icon: '⛽', color: '#FF453A', defaultCalc: 'opt3', fixedReturn: 20 },
-      { id: 'food', name: '餐飲補給', icon: '🍱', color: '#FF9F0A', defaultCalc: 'opt3', fixedReturn: 20 },
-      { id: 'maint', name: '保養維修', icon: '🔧', color: '#FFD60A', defaultCalc: 'opt3', fixedReturn: 20 },
-      { id: 'toll', name: '停車/過路', icon: '🅿️', color: '#64D2FF', defaultCalc: 'opt3', fixedReturn: 20 },
-      { id: 'comm', name: '通訊/平台', icon: '📱', color: '#BF5AF2', defaultCalc: 'opt3', fixedReturn: 20 },
-      { id: 'tax', name: '保險/稅金', icon: '📄', color: '#5E5CE6', defaultCalc: 'opt3', fixedReturn: 20 },
+      { id: 'fuel', name: '加油/充電', icon: '⛽', color: '#30D158', defaultCalc: 'opt3', fixedReturn: 20 },
+      { id: 'food', name: '餐飲補給', icon: '🍱', color: '#32D74B', defaultCalc: 'opt3', fixedReturn: 20 },
+      { id: 'maint', name: '保養維修', icon: '🔧', color: '#64D2FF', defaultCalc: 'opt3', fixedReturn: 20 },
+      { id: 'toll', name: '停車/過路', icon: '🅿️', color: '#5E5CE6', defaultCalc: 'opt3', fixedReturn: 20 },
+      { id: 'comm', name: '通訊/平台', icon: '📱', color: '#FFD60A', defaultCalc: 'opt3', fixedReturn: 20 },
+      { id: 'tax', name: '保險/稅金', icon: '📄', color: '#BF5AF2', defaultCalc: 'opt3', fixedReturn: 20 },
       { id: 'life', name: '日常雜支', icon: '🛒', color: '#AC8E68', defaultCalc: 'opt3', fixedReturn: 20 },
       { id: 'other_exp', name: '其他支出', icon: '📦', color: '#8E8E93', defaultCalc: 'opt3', fixedReturn: 20 }
     ]
   };
 
-  const PALETTE = ['#30D158', '#0A84FF', '#FF9F0A', '#FF453A', '#BF5AF2', '#64D2FF', '#FFD60A', '#AC8E68', '#5E5CE6'];
+  const PALETTE = ['#FF453A', '#FF6961', '#FF9F0A', '#FFD60A', '#30D158', '#32D74B', '#0A84FF', '#64D2FF', '#BF5AF2'];
   const FIXED_RETURN_OPTIONS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 
   let categories = JSON.parse(localStorage.getItem('driver_categories_v1')) || DEFAULT_CATEGORIES;
@@ -909,7 +910,7 @@
     const net = inc - exp;
 
     document.getElementById('netAmount').textContent = `${net < 0 ? '-' : ''}$${Math.abs(net).toLocaleString()}`;
-    document.getElementById('netAmount').style.color = net >= 0 ? 'var(--text)' : 'var(--expense)';
+    document.getElementById('netAmount').style.color = net >= 0 ? 'var(--text)' : 'var(--income)';
     document.getElementById('totalIncome').textContent = `$${inc.toLocaleString()}`;
     document.getElementById('totalExpense').textContent = `$${exp.toLocaleString()}`;
     document.getElementById('totalDeduction').textContent = `$${totalDeduction.toLocaleString()}`;
@@ -932,7 +933,7 @@
     });
 
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
-    const startWeekday = (firstDayOfMonth.getDay() + 6) % 7; // 週一=0 ... 週日=6
+    const startWeekday = (firstDayOfMonth.getDay() + 6) % 7;
     const startDate = new Date(currentYear, currentMonth, 1 - startWeekday);
     const todayStr = formatDateYMD(new Date());
 
@@ -969,13 +970,18 @@
       .sort((a, b) => b.id - a.id);
 
     let dayInc = 0;
+    let dayDeduct = 0;
     dayList.forEach(t => {
       if (t.type === 'income') {
         dayInc += t.amount;
+        dayDeduct += (t.deduction || 0);
+      } else if (t.category === 'deduct_fee') {
+        dayDeduct += t.amount;
       }
     });
 
-    document.getElementById('dayTotalIncome').textContent = `總收入: $${dayInc.toLocaleString()}`;
+    document.getElementById('dayTotalIncome').textContent = `當日收入: $${dayInc.toLocaleString()}`;
+    document.getElementById('dayTotalDeduction').textContent = `當日回金: $${dayDeduct.toLocaleString()}`;
 
     const container = document.getElementById('listView');
     if (dayList.length === 0) {
@@ -986,6 +992,7 @@
     container.innerHTML = dayList.map(t => {
       const cat = findCategoryInfo(t.type, t.category);
       const sign = t.type === 'income' ? '+' : '-';
+      // 收入顯示紅色(inc-color)，支出顯示綠色(exp-color)
       const colorClass = t.type === 'income' ? 'inc-color' : 'exp-color';
       const deductBadge = (t.type === 'income' && t.deduction > 0)
         ? `<span class="tx-deduct-sub">回金: $${t.deduction.toLocaleString()}</span>`
@@ -1019,7 +1026,6 @@
     const totals = {};
     const counts = {};
     let grandTotal = 0;
-    let totalCount = filtered.length;
 
     filtered.forEach(t => {
       totals[t.category] = (totals[t.category] || 0) + t.amount;
@@ -1039,7 +1045,7 @@
         colors.push(cat.color || '#0A84FF');
         const pct = grandTotal > 0 ? ((totals[cat.id] / grandTotal) * 100).toFixed(1) : 0;
         const count = counts[cat.id] || 0;
-        breakdownItems.push({ ...cat, amount: totals[cat.id], pct, count, totalCount });
+        breakdownItems.push({ ...cat, amount: totals[cat.id], pct, count });
         delete totals[cat.id];
         delete counts[cat.id];
       }
@@ -1051,7 +1057,7 @@
       labels.push('其他歷史分類');
       data.push(totals[unknownId]);
       colors.push('#8E8E93');
-      breakdownItems.push({ name: '其他歷史分類', icon: '📝', amount: totals[unknownId], pct, count, totalCount });
+      breakdownItems.push({ name: '其他歷史分類', icon: '📝', amount: totals[unknownId], pct, count });
     });
 
     breakdownItems.sort((a, b) => b.amount - a.amount);
@@ -1064,21 +1070,18 @@
     } else {
       htmlContent = breakdownItems.map(item => `
         <div class="stat-row">
-          <div>${item.icon} ${escapeHTML(item.name)} <span style="color:var(--text-muted); font-size:12px;">(${item.pct}% · ${item.count}/${item.totalCount}筆)</span></div>
+          <div>${item.icon} ${escapeHTML(item.name)} <span style="color:var(--text-muted); font-size:12px;">(${item.pct}% · ${item.count}筆)</span></div>
           <strong style="font-variant-numeric: tabular-nums;">$${item.amount.toLocaleString()}</strong>
         </div>
       `).join('');
     }
 
-    // 若切換至支出統計，額外新增「分類回金類別統計區塊」（包含固定回金、百回、其他等共幾個多少錢）
     if (chartMode === 'expense') {
       let fixedReturnCount = 0, fixedReturnTotal = 0;
       let percentReturnCount = 0, percentReturnTotal = 0;
       let otherDeductCount = 0, otherDeductTotal = 0;
 
-      // 檢查本月所有收入項目的回金拆解紀錄
       list.filter(t => t.type === 'income').forEach(t => {
-        let rawAmount = t.rawAmount !== undefined ? t.rawAmount : (t.amount + (t.deduction || 0));
         let mode = t.calcMode;
         let ded = t.deduction || 0;
 
@@ -1087,7 +1090,8 @@
             fixedReturnCount += 1;
             fixedReturnTotal += ded;
           } else if (mode === 'opt2') {
-            // opt2 固定+百回：其中包含固定回金部分與百回部分
+            // 偵錯修正：opt2 (固定+百回) 扣款包含「固定回金部分」與「百回比例部分」
+            // 應正確歸類，而不是讓固定回金錯誤多算 1 筆。
             let fixedRetVal = t.fixedReturn !== undefined ? t.fixedReturn : 20;
             let percentDeduct = ded - fixedRetVal;
             if (fixedRetVal > 0) {
@@ -1105,7 +1109,6 @@
         }
       });
 
-      // 同時也納入一般支出分類中屬於回金或扣款的項目
       filtered.forEach(t => {
         if (t.category === 'deduct_fee') {
           fixedReturnCount += 1;
@@ -1447,7 +1450,7 @@
           ${manageCatType === 'income' ? `
             <select class="manage-select" onchange="updateCatDefaultCalc(${idx}, this.value)">
               <option value="opt1" ${cat.defaultCalc === 'opt1' ? 'selected' : ''}>1.固定</option>
-              <option value="opt2" ${cat.defaultCalc === 'opt2' ? 'selected' : ''}>2.固定+百</option>
+              <option value="opt2" ${cat.defaultCalc === 'opt2' ? 'selected' : ''}>2.固定+百回</option>
               <option value="opt3" ${cat.defaultCalc === 'opt3' ? 'selected' : ''}>3.其他</option>
             </select>
             <select class="manage-select" onchange="updateCatFixedReturn(${idx}, this.value)">
