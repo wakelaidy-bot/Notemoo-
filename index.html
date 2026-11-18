@@ -33,7 +33,6 @@
       padding-bottom: calc(90px + env(safe-area-inset-bottom));
       overscroll-behavior-y: none;
     }
-    /* 頂部標題與月份切換 */
     header {
       position: sticky;
       top: 0;
@@ -41,7 +40,7 @@
       background: rgba(0, 0, 0, 0.85);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      padding: 14px 20px;
+      padding: 14px 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -50,34 +49,38 @@
     .month-selector {
       display: flex;
       align-items: center;
-      gap: 12px;
-      font-size: 17px;
+      gap: 10px;
+      font-size: 16px;
       font-weight: 600;
     }
     .month-btn {
       background: var(--card-elevated);
       border: none;
       color: var(--text);
-      width: 30px;
-      height: 30px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       font-size: 14px;
       cursor: pointer;
     }
-    .export-btn {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      padding: 5px 10px;
+    .header-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .header-btn {
+      background: var(--card-elevated);
+      border: 0.5px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
       border-radius: 8px;
       font-size: 12px;
+      font-weight: 500;
     }
     .container {
       padding: 16px 16px 0;
       max-width: 500px;
       margin: 0 auto;
     }
-    /* MOZE 風格總覽卡片 */
     .summary-card {
       background: var(--card);
       border-radius: 20px;
@@ -117,7 +120,6 @@
     .inc-color { color: var(--income); }
     .exp-color { color: var(--expense); }
 
-    /* 分頁切換 (明細 / 統計) */
     .segment-control {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -141,7 +143,6 @@
       color: var(--text);
     }
 
-    /* 圖表區 */
     .chart-card {
       background: var(--card);
       border-radius: 20px;
@@ -166,7 +167,6 @@
     }
     .stat-row:last-child { border-bottom: none; }
 
-    /* 交易明細列表 */
     .tx-list {
       display: flex;
       flex-direction: column;
@@ -185,6 +185,8 @@
       display: flex;
       align-items: center;
       gap: 12px;
+      flex: 1;
+      min-width: 0;
     }
     .tx-icon {
       width: 40px;
@@ -195,11 +197,18 @@
       align-items: center;
       justify-content: center;
       font-size: 19px;
+      flex-shrink: 0;
+    }
+    .tx-info {
+      min-width: 0;
     }
     .tx-info h4 {
       margin: 0 0 3px;
       font-size: 15px;
       font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .tx-info p {
       margin: 0;
@@ -208,6 +217,8 @@
     }
     .tx-right {
       text-align: right;
+      margin-left: 10px;
+      flex-shrink: 0;
     }
     .tx-amount {
       font-size: 16px;
@@ -229,7 +240,6 @@
       font-size: 14px;
     }
 
-    /* 底部懸浮新增按鈕 */
     .fab {
       position: fixed;
       bottom: calc(20px + env(safe-area-inset-bottom));
@@ -246,11 +256,10 @@
       z-index: 20;
     }
 
-    /* 底部滑出記帳面板 (Bottom Sheet) */
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.75);
       z-index: 30;
       display: none;
       align-items: flex-end;
@@ -263,7 +272,9 @@
       margin: 0 auto;
       border-radius: 24px 24px 0 0;
       padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
-      animation: slideUp 0.25s ease-out;
+      max-height: 88vh;
+      overflow-y: auto;
+      animation: slideUp 0.22s ease-out;
     }
     @keyframes slideUp {
       from { transform: translateY(100%); }
@@ -273,7 +284,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
     .type-toggle {
       display: flex;
@@ -296,8 +307,8 @@
     .amount-input-box {
       background: #2C2C2E;
       border-radius: 14px;
-      padding: 12px 16px;
-      margin-bottom: 14px;
+      padding: 10px 16px;
+      margin-bottom: 10px;
       display: flex;
       align-items: center;
     }
@@ -316,11 +327,49 @@
       font-weight: 700;
       outline: none;
     }
+
+    .calc-mode-box {
+      margin-bottom: 14px;
+    }
+    .calc-options {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .calc-btn {
+      background: #2C2C2E;
+      border: 1.5px solid transparent;
+      color: var(--text);
+      padding: 9px 4px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+    }
+    .calc-btn.selected {
+      border-color: var(--income);
+      background: rgba(48, 209, 88, 0.15);
+      color: var(--income);
+    }
+    .calc-preview {
+      font-size: 12px;
+      color: var(--income);
+      background: rgba(48, 209, 88, 0.08);
+      padding: 8px 12px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
     .cat-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 8px;
       margin-bottom: 14px;
+      max-height: 185px;
+      overflow-y: auto;
     }
     .cat-chip {
       background: #2C2C2E;
@@ -342,7 +391,7 @@
       gap: 10px;
       margin-bottom: 16px;
     }
-    .meta-inputs input {
+    .meta-inputs input, .add-cat-row input {
       background: #2C2C2E;
       border: none;
       border-radius: 12px;
@@ -362,6 +411,52 @@
       font-size: 16px;
       font-weight: 600;
     }
+
+    .add-cat-row {
+      display: grid;
+      grid-template-columns: 60px 1fr 72px;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .add-cat-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .manage-cat-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 45vh;
+      overflow-y: auto;
+    }
+    .manage-cat-item {
+      background: #2C2C2E;
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .sort-controls {
+      display: flex;
+      gap: 6px;
+    }
+    .icon-action-btn {
+      background: #3A3A3C;
+      border: none;
+      color: var(--text);
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .icon-action-btn.del {
+      color: var(--expense);
+    }
   </style>
 </head>
 <body>
@@ -372,11 +467,13 @@
     <span id="currentMonthLabel">2026年 11月</span>
     <button class="month-btn" onclick="changeMonth(1)">›</button>
   </div>
-  <button class="export-btn" onclick="exportCSV()">匯出備份</button>
+  <div class="header-actions">
+    <button class="header-btn" onclick="openCatModal()">分類管理</button>
+    <button class="header-btn" onclick="exportCSV()">備份</button>
+  </div>
 </header>
 
 <div class="container">
-  <!-- 淨利與收支總覽卡 -->
   <div class="summary-card">
     <div class="net-label">本月淨利結餘</div>
     <div class="net-amount" id="netAmount">$0</div>
@@ -392,20 +489,17 @@
     </div>
   </div>
 
-  <!-- 視圖切換 -->
   <div class="segment-control">
     <button class="segment-btn active" id="tabList" onclick="switchTab('list')">收支明細</button>
     <button class="segment-btn" id="tabChart" onclick="switchTab('chart')">分類統計</button>
   </div>
 
-  <!-- 明細列表 -->
   <div id="listView" class="tx-list"></div>
 
-  <!-- 統計圖表 -->
   <div id="chartView" class="chart-card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-      <span style="font-size:14px; font-weight:600;" id="chartTitle">支出結構分析</span>
-      <button class="export-btn" onclick="toggleChartType()" id="chartToggleBtn">切換收入圖表</button>
+      <span style="font-size:14px; font-weight:600;" id="chartTitle">營收來源分析</span>
+      <button class="header-btn" onclick="toggleChartType()" id="chartToggleBtn">切換支出圖表</button>
     </div>
     <div class="chart-wrapper">
       <canvas id="categoryChart"></canvas>
@@ -414,7 +508,6 @@
   </div>
 </div>
 
-<!-- 懸浮記帳按鈕 -->
 <button class="fab" onclick="openModal()">+ 記一筆</button>
 
 <!-- 記帳彈出面板 -->
@@ -422,31 +515,72 @@
   <div class="bottom-sheet">
     <div class="sheet-header">
       <div class="type-toggle">
-        <button id="btnTypeExp" class="active-exp" onclick="setTxType('expense')">支出</button>
-        <button id="btnTypeInc" onclick="setTxType('income')">營收/收入</button>
+        <button id="btnTypeInc" class="active-inc" onclick="setTxType('income')">營收/收入</button>
+        <button id="btnTypeExp" onclick="setTxType('expense')">支出</button>
       </div>
       <button style="background:none; border:none; color:var(--text-muted); font-size:15px;" onclick="closeModal()">取消</button>
     </div>
 
     <div class="amount-input-box">
       <span>$</span>
-      <input type="number" id="inputAmount" inputmode="decimal" placeholder="0" />
+      <input type="number" id="inputAmount" inputmode="decimal" placeholder="輸入總金額" oninput="updateCalcPreview()" />
+    </div>
+
+    <!-- 收入專屬計算選項 -->
+    <div class="calc-mode-box" id="calcModeBox">
+      <div class="calc-options">
+        <button type="button" class="calc-btn selected" id="calcOpt1" onclick="setCalcMode('opt1')">1. 回20</button>
+        <button type="button" class="calc-btn" id="calcOpt2" onclick="setCalcMode('opt2')">2. 回20百回</button>
+        <button type="button" class="calc-btn" id="calcOpt3" onclick="setCalcMode('opt3')">3. 其他</button>
+      </div>
+      <div class="calc-preview">
+        <span id="calcFormulaText">公式：總金額 - 20</span>
+        <strong id="calcResultText">實拿：$0</strong>
+      </div>
     </div>
 
     <div class="cat-grid" id="categoryGrid"></div>
 
     <div class="meta-inputs">
       <input type="date" id="inputDate" />
-      <input type="text" id="inputNote" placeholder="備註 (如: 趟數、加油站)" />
+      <input type="text" id="inputNote" placeholder="備註 (如: 趟數、地點)" />
     </div>
 
     <button class="submit-btn" onclick="saveTransaction()">儲存紀錄</button>
   </div>
 </div>
 
+<!-- 分類管理彈出面板 -->
+<div class="modal-backdrop" id="catModalBackdrop" onclick="closeCatModalOnBg(event)">
+  <div class="bottom-sheet">
+    <div class="sheet-header">
+      <div class="type-toggle">
+        <button id="catManageInc" class="active-inc" onclick="setManageCatType('income')">收入分類</button>
+        <button id="catManageExp" onclick="setManageCatType('expense')">支出分類</button>
+      </div>
+      <button style="background:none; border:none; color:var(--accent); font-size:15px; font-weight:600;" onclick="closeCatModal()">完成</button>
+    </div>
+
+    <div class="add-cat-row">
+      <input type="text" id="newCatIcon" placeholder="圖示" value="📌" maxlength="4" style="text-align:center;" />
+      <input type="text" id="newCatName" placeholder="輸入新分類名稱..." />
+      <button class="add-cat-btn" onclick="addNewCategory()">新增</button>
+    </div>
+
+    <div class="manage-cat-list" id="manageCatList"></div>
+  </div>
+</div>
+
 <script>
-  // 運轉手帳本專屬分類定義
-  const CATEGORIES = {
+  const DEFAULT_CATEGORIES = {
+    income: [
+      { id: 'fare', name: '車資/趟次', icon: '🚕', color: '#30D158' },
+      { id: 'delivery', name: '外送/貨運', icon: '🛵', color: '#32D74B' },
+      { id: 'bonus', name: '達標獎金', icon: '🏆', color: '#FFD60A' },
+      { id: 'tip', name: '小費/額外', icon: '💵', color: '#64D2FF' },
+      { id: 'salary', name: '固定薪資', icon: '💼', color: '#0A84FF' },
+      { id: 'other_inc', name: '其他收入', icon: '✨', color: '#BF5AF2' }
+    ],
     expense: [
       { id: 'fuel', name: '加油/充電', icon: '⛽', color: '#FF453A' },
       { id: 'food', name: '餐飲補給', icon: '🍱', color: '#FF9F0A' },
@@ -456,24 +590,25 @@
       { id: 'tax', name: '保險/稅金', icon: '📄', color: '#5E5CE6' },
       { id: 'life', name: '日常雜支', icon: '🛒', color: '#AC8E68' },
       { id: 'other_exp', name: '其他支出', icon: '📦', color: '#8E8E93' }
-    ],
-    income: [
-      { id: 'fare', name: '車資/趟次', icon: '🚕', color: '#30D158' },
-      { id: 'delivery', name: '外送/貨運', icon: '🛵', color: '#32D74B' },
-      { id: 'bonus', name: '達標獎金', icon: '🏆', color: '#FFD60A' },
-      { id: 'tip', name: '小費/額外', icon: '💵', color: '#64D2FF' },
-      { id: 'salary', name: '固定薪資', icon: '💼', color: '#0A84FF' },
-      { id: 'other_inc', name: '其他收入', icon: '✨', color: '#BF5AF2' }
     ]
   };
 
+  const PALETTE = ['#30D158', '#0A84FF', '#FF9F0A', '#FF453A', '#BF5AF2', '#64D2FF', '#FFD60A', '#AC8E68', '#5E5CE6'];
+
+  let categories = JSON.parse(localStorage.getItem('driver_categories_v1')) || DEFAULT_CATEGORIES;
   let transactions = JSON.parse(localStorage.getItem('driver_ledger_v1')) || [];
   let currentYear = new Date().getFullYear();
-  let currentMonth = new Date().getMonth(); // 0-11
-  let currentTxType = 'expense';
-  let selectedCategory = 'fuel';
-  let chartMode = 'expense';
+  let currentMonth = new Date().getMonth();
+  let currentTxType = 'income';
+  let selectedCategory = categories.income[0]?.id || 'fare';
+  let currentCalcMode = 'opt1';
+  let manageCatType = 'income';
+  let chartMode = 'income';
   let chartInstance = null;
+
+  function saveCategories() {
+    localStorage.setItem('driver_categories_v1', JSON.stringify(categories));
+  }
 
   function init() {
     updateMonthLabel();
@@ -497,6 +632,11 @@
     return transactions
       .filter(t => t.date.startsWith(prefix))
       .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+  }
+
+  function findCategoryInfo(type, catId) {
+    const list = categories[type] || [];
+    return list.find(c => c.id === catId) || { name: '已刪除分類', icon: '📝', color: '#8E8E93' };
   }
 
   function renderAll() {
@@ -524,8 +664,7 @@
       return;
     }
     container.innerHTML = list.map(t => {
-      const catList = CATEGORIES[t.type];
-      const cat = catList.find(c => c.id === t.category) || { name: '其他', icon: '📝' };
+      const cat = findCategoryInfo(t.type, t.category);
       const sign = t.type === 'income' ? '+' : '-';
       const colorClass = t.type === 'income' ? 'inc-color' : 'exp-color';
       return `
@@ -533,7 +672,7 @@
           <div class="tx-left">
             <div class="tx-icon">${cat.icon}</div>
             <div class="tx-info">
-              <h4>${cat.name}${t.note ? ` · ${escapeHTML(t.note)}` : ''}</h4>
+              <h4>${escapeHTML(cat.name)}${t.note ? ` · ${escapeHTML(t.note)}` : ''}</h4>
               <p>${t.date}</p>
             </div>
           </div>
@@ -548,7 +687,7 @@
 
   function renderChart(list) {
     const filtered = list.filter(t => t.type === chartMode);
-    const catList = CATEGORIES[chartMode];
+    const catList = categories[chartMode] || [];
     const totals = {};
     let grandTotal = 0;
 
@@ -566,10 +705,19 @@
       if (totals[cat.id]) {
         labels.push(cat.name);
         data.push(totals[cat.id]);
-        colors.push(cat.color);
+        colors.push(cat.color || '#0A84FF');
         const pct = ((totals[cat.id] / grandTotal) * 100).toFixed(1);
         breakdownItems.push({ ...cat, amount: totals[cat.id], pct });
+        delete totals[cat.id];
       }
+    });
+
+    Object.keys(totals).forEach(unknownId => {
+      const pct = ((totals[unknownId] / grandTotal) * 100).toFixed(1);
+      labels.push('其他歷史分類');
+      data.push(totals[unknownId]);
+      colors.push('#8E8E93');
+      breakdownItems.push({ name: '其他歷史分類', icon: '📝', amount: totals[unknownId], pct });
     });
 
     breakdownItems.sort((a, b) => b.amount - a.amount);
@@ -580,7 +728,7 @@
     } else {
       breakdownEl.innerHTML = breakdownItems.map(item => `
         <div class="stat-row">
-          <div>${item.icon} ${item.name} <span style="color:var(--text-muted); font-size:12px;">(${item.pct}%)</span></div>
+          <div>${item.icon} ${escapeHTML(item.name)} <span style="color:var(--text-muted); font-size:12px;">(${item.pct}%)</span></div>
           <strong style="font-variant-numeric: tabular-nums;">$${item.amount.toLocaleString()}</strong>
         </div>
       `).join('');
@@ -625,6 +773,39 @@
     renderChart(getFilteredTransactions());
   }
 
+  /* 收入計算公式更新：選項2為總金額-((總金額-20)*10)並無條件去尾 */
+  function calculateFinalIncome(rawAmount, mode) {
+    if (!rawAmount || rawAmount <= 0) return 0;
+    if (mode === 'opt1') {
+      return Math.max(0, rawAmount - 20);
+    } else if (mode === 'opt2') {
+      const val = rawAmount - ((rawAmount - 20) * 10);
+      return Math.max(0, Math.floor(val));
+    } else {
+      return rawAmount;
+    }
+  }
+
+  function setCalcMode(mode) {
+    currentCalcMode = mode;
+    document.getElementById('calcOpt1').classList.toggle('selected', mode === 'opt1');
+    document.getElementById('calcOpt2').classList.toggle('selected', mode === 'opt2');
+    document.getElementById('calcOpt3').classList.toggle('selected', mode === 'opt3');
+    updateCalcPreview();
+  }
+
+  function updateCalcPreview() {
+    const raw = parseFloat(document.getElementById('inputAmount').value) || 0;
+    const finalVal = calculateFinalIncome(raw, currentCalcMode);
+    const formulaMap = {
+      opt1: '公式：總金額 - 20',
+      opt2: '公式：總金額 - ((總金額 - 20) × 10)',
+      opt3: '公式：原金額不增減'
+    };
+    document.getElementById('calcFormulaText').textContent = formulaMap[currentCalcMode];
+    document.getElementById('calcResultText').textContent = `實拿：$${finalVal.toLocaleString()}`;
+  }
+
   function openModal() {
     document.getElementById('modalBackdrop').classList.add('open');
     document.getElementById('inputAmount').value = '';
@@ -634,7 +815,8 @@
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
     document.getElementById('inputDate').value = `${yyyy}-${mm}-${dd}`;
-    setTxType('expense');
+    setTxType('income');
+    setCalcMode('opt1');
     setTimeout(() => document.getElementById('inputAmount').focus(), 100);
   }
 
@@ -648,18 +830,22 @@
 
   function setTxType(type) {
     currentTxType = type;
-    document.getElementById('btnTypeExp').className = type === 'expense' ? 'active-exp' : '';
     document.getElementById('btnTypeInc').className = type === 'income' ? 'active-inc' : '';
-    selectedCategory = CATEGORIES[type][0].id;
+    document.getElementById('btnTypeExp').className = type === 'expense' ? 'active-exp' : '';
+    document.getElementById('calcModeBox').style.display = type === 'income' ? 'block' : 'none';
+    document.getElementById('inputAmount').placeholder = type === 'income' ? '輸入總金額' : '輸入支出金額';
+    selectedCategory = categories[type][0]?.id || '';
     renderCategoryGrid();
+    if (type === 'income') updateCalcPreview();
   }
 
   function renderCategoryGrid() {
     const grid = document.getElementById('categoryGrid');
-    grid.innerHTML = CATEGORIES[currentTxType].map(cat => `
+    const list = categories[currentTxType] || [];
+    grid.innerHTML = list.map(cat => `
       <div class="cat-chip ${cat.id === selectedCategory ? 'selected' : ''}" onclick="selectCategory('${cat.id}')">
         <div>${cat.icon}</div>
-        <span>${cat.name}</span>
+        <span>${escapeHTML(cat.name)}</span>
       </div>
     `).join('');
   }
@@ -670,11 +856,11 @@
   }
 
   function saveTransaction() {
-    const amount = parseFloat(document.getElementById('inputAmount').value);
+    const rawAmount = parseFloat(document.getElementById('inputAmount').value);
     const date = document.getElementById('inputDate').value;
-    const note = document.getElementById('inputNote').value.trim();
+    let note = document.getElementById('inputNote').value.trim();
 
-    if (!amount || amount <= 0) {
+    if (!rawAmount || rawAmount <= 0) {
       alert('請輸入有效金額');
       return;
     }
@@ -683,11 +869,21 @@
       return;
     }
 
+    let finalAmount = rawAmount;
+    if (currentTxType === 'income') {
+      finalAmount = calculateFinalIncome(rawAmount, currentCalcMode);
+      const modeTag = currentCalcMode === 'opt1' ? `回20(原$${rawAmount})` :
+                      currentCalcMode === 'opt2' ? `回20百回(原$${rawAmount})` : '';
+      if (modeTag) {
+        note = note ? `${modeTag} · ${note}` : modeTag;
+      }
+    }
+
     transactions.push({
       id: Date.now(),
       type: currentTxType,
       category: selectedCategory,
-      amount,
+      amount: finalAmount,
       date,
       note
     });
@@ -704,6 +900,87 @@
     renderAll();
   }
 
+  function openCatModal() {
+    document.getElementById('catModalBackdrop').classList.add('open');
+    setManageCatType('income');
+  }
+
+  function closeCatModal() {
+    document.getElementById('catModalBackdrop').classList.remove('open');
+    renderAll();
+  }
+
+  function closeCatModalOnBg(e) {
+    if (e.target.id === 'catModalBackdrop') closeCatModal();
+  }
+
+  function setManageCatType(type) {
+    manageCatType = type;
+    document.getElementById('catManageInc').className = type === 'income' ? 'active-inc' : '';
+    document.getElementById('catManageExp').className = type === 'expense' ? 'active-exp' : '';
+    renderManageCatList();
+  }
+
+  function renderManageCatList() {
+    const list = categories[manageCatType] || [];
+    const container = document.getElementById('manageCatList');
+    container.innerHTML = list.map((cat, idx) => `
+      <div class="manage-cat-item">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:20px;">${cat.icon}</span>
+          <span style="font-size:15px; font-weight:500;">${escapeHTML(cat.name)}</span>
+        </div>
+        <div class="sort-controls">
+          <button class="icon-action-btn" onclick="moveCategory(${idx}, -1)" ${idx === 0 ? 'disabled style="opacity:0.3"' : ''}>↑</button>
+          <button class="icon-action-btn" onclick="moveCategory(${idx}, 1)" ${idx === list.length - 1 ? 'disabled style="opacity:0.3"' : ''}>↓</button>
+          <button class="icon-action-btn del" onclick="removeCategory(${idx})">✕</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function addNewCategory() {
+    const icon = document.getElementById('newCatIcon').value.trim() || '📌';
+    const name = document.getElementById('newCatName').value.trim();
+    if (!name) {
+      alert('請輸入分類名稱');
+      return;
+    }
+    const color = PALETTE[categories[manageCatType].length % PALETTE.length];
+    categories[manageCatType].push({
+      id: 'custom_' + Date.now(),
+      name,
+      icon,
+      color
+    });
+    saveCategories();
+    document.getElementById('newCatName').value = '';
+    renderManageCatList();
+  }
+
+  function moveCategory(index, direction) {
+    const list = categories[manageCatType];
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= list.length) return;
+    const temp = list[index];
+    list[index] = list[targetIndex];
+    list[targetIndex] = temp;
+    saveCategories();
+    renderManageCatList();
+  }
+
+  function removeCategory(index) {
+    const list = categories[manageCatType];
+    if (list.length <= 1) {
+      alert('至少需保留一個分類');
+      return;
+    }
+    if (!confirm(`確定要刪除「${list[index].name}」嗎？`)) return;
+    list.splice(index, 1);
+    saveCategories();
+    renderManageCatList();
+  }
+
   function exportCSV() {
     if (transactions.length === 0) {
       alert('目前沒有資料可匯出');
@@ -711,7 +988,7 @@
     }
     let csv = '\uFEFF日期,類型,分類,金額,備註\n';
     transactions.forEach(t => {
-      const cat = CATEGORIES[t.type].find(c => c.id === t.category)?.name || t.category;
+      const cat = findCategoryInfo(t.type, t.category).name;
       const typeLabel = t.type === 'income' ? '收入' : '支出';
       csv += `${t.date},${typeLabel},${cat},${t.amount},"${(t.note || '').replace(/"/g, '""')}"\n`;
     });
@@ -725,7 +1002,7 @@
   }
 
   function escapeHTML(str) {
-    return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
   }
 
   init();
