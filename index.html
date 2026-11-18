@@ -391,7 +391,7 @@
       gap: 10px;
       margin-bottom: 16px;
     }
-    .meta-inputs input, .add-cat-row input {
+    .meta-inputs input, .add-cat-row input, .add-cat-row select {
       background: #2C2C2E;
       border: none;
       border-radius: 12px;
@@ -414,8 +414,8 @@
 
     .add-cat-row {
       display: grid;
-      grid-template-columns: 60px 1fr 72px;
-      gap: 8px;
+      grid-template-columns: 50px 1fr 100px 64px;
+      gap: 6px;
       margin-bottom: 14px;
     }
     .add-cat-btn {
@@ -443,19 +443,29 @@
     }
     .sort-controls {
       display: flex;
-      gap: 6px;
+      gap: 4px;
+      align-items: center;
     }
     .icon-action-btn {
       background: #3A3A3C;
       border: none;
       color: var(--text);
-      width: 30px;
-      height: 30px;
-      border-radius: 8px;
-      font-size: 14px;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      font-size: 13px;
     }
     .icon-action-btn.del {
       color: var(--expense);
+    }
+    .manage-select {
+      background: #3A3A3C;
+      border: none;
+      color: var(--text);
+      font-size: 11px;
+      padding: 4px;
+      border-radius: 6px;
+      outline: none;
     }
   </style>
 </head>
@@ -561,9 +571,14 @@
       <button style="background:none; border:none; color:var(--accent); font-size:15px; font-weight:600;" onclick="closeCatModal()">完成</button>
     </div>
 
-    <div class="add-cat-row">
+    <div class="add-cat-row" id="addCatRowContainer">
       <input type="text" id="newCatIcon" placeholder="圖示" value="📌" maxlength="4" style="text-align:center;" />
-      <input type="text" id="newCatName" placeholder="輸入新分類名稱..." />
+      <input type="text" id="newCatName" placeholder="新分類名稱..." />
+      <select id="newCatDefaultCalc" class="manage-select">
+        <option value="opt1">回20</option>
+        <option value="opt2">回20百回</option>
+        <option value="opt3">其他</option>
+      </select>
       <button class="add-cat-btn" onclick="addNewCategory()">新增</button>
     </div>
 
@@ -574,12 +589,12 @@
 <script>
   const DEFAULT_CATEGORIES = {
     income: [
-      { id: 'fare', name: '車資/趟次', icon: '🚕', color: '#30D158' },
-      { id: 'delivery', name: '外送/貨運', icon: '🛵', color: '#32D74B' },
-      { id: 'bonus', name: '達標獎金', icon: '🏆', color: '#FFD60A' },
-      { id: 'tip', name: '小費/額外', icon: '💵', color: '#64D2FF' },
-      { id: 'salary', name: '固定薪資', icon: '💼', color: '#0A84FF' },
-      { id: 'other_inc', name: '其他收入', icon: '✨', color: '#BF5AF2' }
+      { id: 'fare', name: '車資/趟次', icon: '🚕', color: '#30D158', defaultCalc: 'opt2' },
+      { id: 'delivery', name: '外送/貨運', icon: '🛵', color: '#32D74B', defaultCalc: 'opt1' },
+      { id: 'bonus', name: '達標獎金', icon: '🏆', color: '#FFD60A', defaultCalc: 'opt3' },
+      { id: 'tip', name: '小費/額外', icon: '💵', color: '#64D2FF', defaultCalc: 'opt3' },
+      { id: 'salary', name: '固定薪資', icon: '💼', color: '#0A84FF', defaultCalc: 'opt3' },
+      { id: 'other_inc', name: '其他收入', icon: '✨', color: '#BF5AF2', defaultCalc: 'opt3' }
     ],
     expense: [
       { id: 'fuel', name: '加油/充電', icon: '⛽', color: '#FF453A' },
@@ -773,13 +788,13 @@
     renderChart(getFilteredTransactions());
   }
 
-  /* 收入計算公式更新：選項2為總金額-((總金額-20)*10)並無條件去尾 */
+  /* 收入計算公式：選項2為總金額-((總金額-20)*10%)並無條件去尾 */
   function calculateFinalIncome(rawAmount, mode) {
     if (!rawAmount || rawAmount <= 0) return 0;
     if (mode === 'opt1') {
       return Math.max(0, rawAmount - 20);
     } else if (mode === 'opt2') {
-      const val = rawAmount - ((rawAmount - 20) * 10);
+      const val = rawAmount - ((rawAmount - 20) * 0.1);
       return Math.max(0, Math.floor(val));
     } else {
       return rawAmount;
@@ -799,7 +814,7 @@
     const finalVal = calculateFinalIncome(raw, currentCalcMode);
     const formulaMap = {
       opt1: '公式：總金額 - 20',
-      opt2: '公式：總金額 - ((總金額 - 20) × 10)',
+      opt2: '公式：總金額 - ((總金額 - 20) × 10%)',
       opt3: '公式：原金額不增減'
     };
     document.getElementById('calcFormulaText').textContent = formulaMap[currentCalcMode];
@@ -816,7 +831,6 @@
     const dd = String(today.getDate()).padStart(2, '0');
     document.getElementById('inputDate').value = `${yyyy}-${mm}-${dd}`;
     setTxType('income');
-    setCalcMode('opt1');
     setTimeout(() => document.getElementById('inputAmount').focus(), 100);
   }
 
@@ -834,9 +848,15 @@
     document.getElementById('btnTypeExp').className = type === 'expense' ? 'active-exp' : '';
     document.getElementById('calcModeBox').style.display = type === 'income' ? 'block' : 'none';
     document.getElementById('inputAmount').placeholder = type === 'income' ? '輸入總金額' : '輸入支出金額';
-    selectedCategory = categories[type][0]?.id || '';
+    
+    const list = categories[type] || [];
+    selectedCategory = list[0]?.id || '';
     renderCategoryGrid();
-    if (type === 'income') updateCalcPreview();
+    
+    // 若為收入，選定第一個分類時套用其預設回金模式
+    if (type === 'income' && list[0] && list[0].defaultCalc) {
+      setCalcMode(list[0].defaultCalc);
+    }
   }
 
   function renderCategoryGrid() {
@@ -853,6 +873,12 @@
   function selectCategory(id) {
     selectedCategory = id;
     renderCategoryGrid();
+    if (currentTxType === 'income') {
+      const cat = (categories.income || []).find(c => c.id === id);
+      if (cat && cat.defaultCalc) {
+        setCalcMode(cat.defaultCalc);
+      }
+    }
   }
 
   function saveTransaction() {
@@ -918,6 +944,10 @@
     manageCatType = type;
     document.getElementById('catManageInc').className = type === 'income' ? 'active-inc' : '';
     document.getElementById('catManageExp').className = type === 'expense' ? 'active-exp' : '';
+    // 支出分類管理時隱藏預設回金下拉
+    document.getElementById('addCatRowContainer').style.gridTemplateColumns = type === 'income' ? '50px 1fr 100px 64px' : '60px 1fr 72px';
+    const calcSelect = document.getElementById('newCatDefaultCalc');
+    if (calcSelect) calcSelect.style.display = type === 'income' ? 'block' : 'none';
     renderManageCatList();
   }
 
@@ -926,11 +956,18 @@
     const container = document.getElementById('manageCatList');
     container.innerHTML = list.map((cat, idx) => `
       <div class="manage-cat-item">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <span style="font-size:20px;">${cat.icon}</span>
-          <span style="font-size:15px; font-weight:500;">${escapeHTML(cat.name)}</span>
+        <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+          <span style="font-size:20px; flex-shrink:0;">${cat.icon}</span>
+          <span style="font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(cat.name)}</span>
         </div>
         <div class="sort-controls">
+          ${manageCatType === 'income' ? `
+            <select class="manage-select" onchange="updateCatDefaultCalc(${idx}, this.value)">
+              <option value="opt1" ${cat.defaultCalc === 'opt1' ? 'selected' : ''}>回20</option>
+              <option value="opt2" ${cat.defaultCalc === 'opt2' ? 'selected' : ''}>回20百回</option>
+              <option value="opt3" ${cat.defaultCalc === 'opt3' ? 'selected' : ''}>其他</option>
+            </select>
+          ` : ''}
           <button class="icon-action-btn" onclick="moveCategory(${idx}, -1)" ${idx === 0 ? 'disabled style="opacity:0.3"' : ''}>↑</button>
           <button class="icon-action-btn" onclick="moveCategory(${idx}, 1)" ${idx === list.length - 1 ? 'disabled style="opacity:0.3"' : ''}>↓</button>
           <button class="icon-action-btn del" onclick="removeCategory(${idx})">✕</button>
@@ -939,20 +976,30 @@
     `).join('');
   }
 
+  function updateCatDefaultCalc(index, val) {
+    categories.income[index].defaultCalc = val;
+    saveCategories();
+  }
+
   function addNewCategory() {
     const icon = document.getElementById('newCatIcon').value.trim() || '📌';
     const name = document.getElementById('newCatName').value.trim();
+    const defaultCalc = document.getElementById('newCatDefaultCalc').value;
     if (!name) {
       alert('請輸入分類名稱');
       return;
     }
     const color = PALETTE[categories[manageCatType].length % PALETTE.length];
-    categories[manageCatType].push({
+    const newCat = {
       id: 'custom_' + Date.now(),
       name,
       icon,
       color
-    });
+    };
+    if (manageCatType === 'income') {
+      newCat.defaultCalc = defaultCalc;
+    }
+    categories[manageCatType].push(newCat);
     saveCategories();
     document.getElementById('newCatName').value = '';
     renderManageCatList();
