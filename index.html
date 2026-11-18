@@ -416,7 +416,7 @@
 
     .add-cat-row {
       display: grid;
-      grid-template-columns: 50px 1fr 110px 64px;
+      grid-template-columns: 42px minmax(70px, 1fr) 88px 76px 52px;
       gap: 6px;
       margin-bottom: 14px;
     }
@@ -586,6 +586,7 @@
         <option value="opt2">2.固定回金+百回</option>
         <option value="opt3">3.其他</option>
       </select>
+      <input type="number" id="newCatFixedReturn" min="0" step="1" value="20" placeholder="固定回金" title="此分類固定回金金額" />
       <button class="add-cat-btn" onclick="addNewCategory()">新增</button>
     </div>
 
@@ -596,8 +597,8 @@
 <script>
   const DEFAULT_CATEGORIES = {
     income: [
-      { id: 'fare', name: '車資/趟次', icon: '🚕', color: '#30D158', defaultCalc: 'opt2' },
-      { id: 'delivery', name: '外送/貨運', icon: '🛵', color: '#32D74B', defaultCalc: 'opt1' },
+      { id: 'fare', name: '車資/趟次', icon: '🚕', color: '#30D158', defaultCalc: 'opt2', fixedReturn: 20 },
+      { id: 'delivery', name: '外送/貨運', icon: '🛵', color: '#32D74B', defaultCalc: 'opt1', fixedReturn: 20 },
       { id: 'bonus', name: '達標獎金', icon: '🏆', color: '#FFD60A', defaultCalc: 'opt3' },
       { id: 'tip', name: '小費/額外', icon: '💵', color: '#64D2FF', defaultCalc: 'opt3' },
       { id: 'salary', name: '固定薪資', icon: '💼', color: '#0A84FF', defaultCalc: 'opt3' },
@@ -619,6 +620,11 @@
   const PALETTE = ['#30D158', '#0A84FF', '#FF9F0A', '#FF453A', '#BF5AF2', '#64D2FF', '#FFD60A', '#AC8E68', '#5E5CE6'];
 
   let categories = JSON.parse(localStorage.getItem('driver_categories_v1')) || DEFAULT_CATEGORIES;
+  // 舊版分類相容：既有收入分類預設沿用舊版固定回金 20 元
+  categories.income = (categories.income || []).map(c => ({
+    ...c,
+    fixedReturn: Number.isFinite(Number(c.fixedReturn)) ? Math.max(0, Number(c.fixedReturn)) : 20
+  }));
   // 確保支出分類中必定有「回金」項目
   if (!categories.expense.some(c => c.id === 'deduct_fee')) {
     categories.expense.unshift({ id: 'deduct_fee', name: '回金', icon: '🔄', color: '#FF9F0A' });
@@ -809,24 +815,24 @@
     renderChart(getFilteredTransactions());
   }
 
-  /* 精確對齊要求的計算公式：
-     選項1 (固定回金): 總金額 - 20
-     選項2 (固定回金+百回): 800 - 20 - ((800 - 20) * 10) 去尾數 -> 或是正確的比例算法
-  */
-  function calculateFinalIncome(rawAmount, mode) {
-    if (!rawAmount || rawAmount <= 0) return { final: 0, deduction: 0 };
+  /* opt1：只扣固定回金；opt2：先扣固定回金，再將餘額的 10% 去除個位數 */
+  function calculateFinalIncome(rawAmount, mode, fixedReturn = 20) {
+    if (!rawAmount || rawAmount <= 0) return { final: 0, deduction: 0, fixed: 0, percentPart: 0 };
+    const fixed = Math.min(rawAmount, Math.max(0, Math.floor(Number(fixedReturn) || 0)));
     if (mode === 'opt1') {
-      let final = Math.max(0, rawAmount - 20);
-      return { final, deduction: rawAmount - final };
+      return { final: rawAmount - fixed, deduction: fixed, fixed, percentPart: 0 };
     } else if (mode === 'opt2') {
-      // 依照需求：800 - 20 - ((800 - 20) * 10) 去尾數
-      let base = rawAmount - 20;
-      let cut = Math.floor(base * 10); // 若百回是指 10 倍或 10%
-      let final = Math.max(0, base - cut);
-      return { final, deduction: rawAmount - final };
-    } else {
-      return { final: rawAmount, deduction: 0 };
+      const base = rawAmount - fixed;
+      const percentPart = Math.floor((base * 0.10) / 10) * 10;
+      const deduction = fixed + percentPart;
+      return { final: Math.max(0, rawAmount - deduction), deduction, fixed, percentPart };
     }
+    return { final: rawAmount, deduction: 0, fixed: 0, percentPart: 0 };
+  }
+
+  function getSelectedCategoryFixedReturn() {
+    const cat = (categories.income || []).find(c => c.id === selectedCategory);
+    return cat ? (Number(cat.fixedReturn) || 0) : 20;
   }
 
   function setCalcMode(mode) {
@@ -839,14 +845,16 @@
 
   function updateCalcPreview() {
     const raw = parseFloat(document.getElementById('inputAmount').value) || 0;
-    const res = calculateFinalIncome(raw, currentCalcMode);
+    const fixedReturn = getSelectedCategoryFixedReturn();
+    const res = calculateFinalIncome(raw, currentCalcMode, fixedReturn);
     const formulaMap = {
-      opt1: '公式：總金額 - 20',
-      opt2: '公式：總金額 - 20 - ((總金額 - 20) × 10) 去尾',
+      opt1: `公式：總金額 - 固定回金 $${fixedReturn}`,
+      opt2: `公式：(總金額 - 固定回金 $${fixedReturn}) × 10%，百回去個位數`,
       opt3: '公式：原金額不增減'
     };
     document.getElementById('calcFormulaText').textContent = formulaMap[currentCalcMode];
-    document.getElementById('calcResultText').textContent = `實拿：$${res.final.toLocaleString()} (回金:$${res.deduction})`;
+    document.getElementById('calcResultText').textContent =
+      `實拿：$${res.final.toLocaleString()} (回金:$${res.deduction.toLocaleString()}${currentCalcMode === 'opt2' ? `，百回:$${res.percentPart}` : ''})`;
   }
 
   function openModal() {
@@ -925,7 +933,7 @@
     let finalAmount = rawAmount;
     let deduction = 0;
     if (currentTxType === 'income') {
-      const res = calculateFinalIncome(rawAmount, currentCalcMode);
+      const res = calculateFinalIncome(rawAmount, currentCalcMode, getSelectedCategoryFixedReturn());
       finalAmount = res.final;
       deduction = res.deduction;
       const modeTag = currentCalcMode === 'opt1' ? `固定回金(原$${rawAmount})` :
@@ -975,9 +983,11 @@
     manageCatType = type;
     document.getElementById('catManageInc').className = type === 'income' ? 'active-inc' : '';
     document.getElementById('catManageExp').className = type === 'expense' ? 'active-exp' : '';
-    document.getElementById('addCatRowContainer').style.gridTemplateColumns = type === 'income' ? '50px 1fr 110px 64px' : '60px 1fr 72px';
+    document.getElementById('addCatRowContainer').style.gridTemplateColumns = type === 'income' ? '42px minmax(70px, 1fr) 88px 76px 52px' : '60px 1fr 72px';
     const calcSelect = document.getElementById('newCatDefaultCalc');
     if (calcSelect) calcSelect.style.display = type === 'income' ? 'block' : 'none';
+    const fixedInput = document.getElementById('newCatFixedReturn');
+    if (fixedInput) fixedInput.style.display = type === 'income' ? 'block' : 'none';
     renderManageCatList();
   }
 
@@ -997,6 +1007,7 @@
               <option value="opt2" ${cat.defaultCalc === 'opt2' ? 'selected' : ''}>2.固定回金+百回</option>
               <option value="opt3" ${cat.defaultCalc === 'opt3' ? 'selected' : ''}>3.其他</option>
             </select>
+            <input class="manage-select" type="number" min="0" step="1" value="${Number(cat.fixedReturn) || 0}" title="固定回金金額" onchange="updateCatFixedReturn(${idx}, this.value)" style="width:76px;" />
           ` : ''}
           <button class="icon-action-btn" onclick="moveCategory(${idx}, -1)" ${idx === 0 ? 'disabled style="opacity:0.3"' : ''}>↑</button>
           <button class="icon-action-btn" onclick="moveCategory(${idx}, 1)" ${idx === list.length - 1 ? 'disabled style="opacity:0.3"' : ''}>↓</button>
@@ -1009,12 +1020,25 @@
   function updateCatDefaultCalc(index, val) {
     categories.income[index].defaultCalc = val;
     saveCategories();
+    if (categories.income[index].id === selectedCategory) {
+      currentCalcMode = val;
+      setCalcMode(val);
+    }
+    renderManageCatList();
+  }
+
+  function updateCatFixedReturn(index, value) {
+    categories.income[index].fixedReturn = Math.max(0, Math.floor(Number(value) || 0));
+    saveCategories();
+    renderManageCatList();
+    if (categories.income[index].id === selectedCategory) updateCalcPreview();
   }
 
   function addNewCategory() {
     const icon = document.getElementById('newCatIcon').value.trim() || '📌';
     const name = document.getElementById('newCatName').value.trim();
     const defaultCalc = document.getElementById('newCatDefaultCalc').value;
+    const fixedReturn = Math.max(0, Math.floor(Number(document.getElementById('newCatFixedReturn').value) || 0));
     if (!name) {
       alert('請輸入分類名稱');
       return;
@@ -1028,10 +1052,12 @@
     };
     if (manageCatType === 'income') {
       newCat.defaultCalc = defaultCalc;
+      newCat.fixedReturn = fixedReturn;
     }
     categories[manageCatType].push(newCat);
     saveCategories();
     document.getElementById('newCatName').value = '';
+    document.getElementById('newCatFixedReturn').value = '20';
     renderManageCatList();
   }
 
