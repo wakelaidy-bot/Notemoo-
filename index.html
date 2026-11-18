@@ -621,9 +621,9 @@
 
 <header>
   <div class="month-selector">
-    <button class="month-btn" onclick="changeMonth(-1)">‹</button>
-    <span id="currentMonthLabel">2026年 11月</span>
-    <button class="month-btn" onclick="changeMonth(1)">›</button>
+    <button class="month-btn" onclick="changePeriod(-1)">‹</button>
+    <span id="currentPeriodLabel" onclick="toggleViewMode()" style="cursor:pointer;" title="點擊切換 月/年度 檢視">2026年 11月</span>
+    <button class="month-btn" onclick="changePeriod(1)">›</button>
   </div>
   <div class="header-actions">
     <span class="sync-status" id="syncStatus">連線中...</span>
@@ -664,20 +664,39 @@
   <!-- 分類統計分頁 -->
   <div id="chartView" style="display:none;">
     <div class="summary-card">
-      <div class="net-label">本月淨利結餘</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+        <div class="net-label" id="netProfitLabel">本月淨利結餘</div>
+        <button class="header-btn" onclick="toggleViewMode()" style="font-size:11px; padding:2px 8px;">切換: <span id="viewModeBadge">月份模式</span></button>
+      </div>
       <div class="net-amount" id="netAmount">$0</div>
       <div class="sub-metrics">
         <div class="metric-box">
-          <span>營收 / 收入</span>
+          <span id="incomeTitleLabel">營收 / 收入</span>
           <strong class="inc-color" id="totalIncome">$0</strong>
         </div>
         <div class="metric-box">
-          <span>營運成本 / 支出</span>
+          <span id="expenseTitleLabel">營運成本 / 支出</span>
           <strong class="exp-color" id="totalExpense">$0</strong>
         </div>
         <div class="metric-box">
           <span>回金總金額</span>
           <strong class="deduct-color" id="totalDeduction">$0</strong>
+        </div>
+      </div>
+      
+      <!-- 新增：單數與均價統計區塊 -->
+      <div style="margin-top:14px; padding-top:12px; border-top: 0.5px solid var(--border); display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; text-align:center;">
+        <div style="background:var(--card-elevated); padding:8px 4px; border-radius:10px;">
+          <span style="font-size:10px; color:var(--text-muted); display:block; margin-bottom:2px;" id="countLabel">月總單筆數</span>
+          <strong style="font-size:14px; font-variant-numeric: tabular-nums;" id="statTotalCount">0 筆</strong>
+        </div>
+        <div style="background:var(--card-elevated); padding:8px 4px; border-radius:10px;">
+          <span style="font-size:10px; color:var(--text-muted); display:block; margin-bottom:2px;">日單平均筆數</span>
+          <strong style="font-size:14px; font-variant-numeric: tabular-nums;" id="statDailyAvgCount">0 筆</strong>
+        </div>
+        <div style="background:var(--card-elevated); padding:8px 4px; border-radius:10px;">
+          <span style="font-size:10px; color:var(--text-muted); display:block; margin-bottom:2px;">日單均價</span>
+          <strong style="font-size:14px; font-variant-numeric: tabular-nums;" id="statDailyAvgPrice">$0</strong>
         </div>
       </div>
     </div>
@@ -827,6 +846,10 @@
   let currentYear = new Date().getFullYear();
   let currentMonth = new Date().getMonth();
   let selectedDateStr = formatDateYMD(new Date());
+  
+  // 檢視模式： 'month' 或 'year'
+  let viewMode = 'month';
+
   let currentTxType = 'income';
   let selectedCategory = categories.income[0]?.id || 'fare';
   let currentCalcMode = 'opt1';
@@ -835,7 +858,6 @@
   let chartMode = 'income';
   let chartInstance = null;
 
-  // 確保舊資料載入時也有「其他回金」支出分類
   function ensureDefaultCategories() {
     if (!categories.expense) categories.expense = DEFAULT_CATEGORIES.expense;
     const hasOtherDeduct = categories.expense.some(c => c.id === 'other_deduct_fee' || c.name === '其他回金');
@@ -874,28 +896,44 @@
 
   function init() {
     ensureDefaultCategories();
-    updateMonthLabel();
+    updatePeriodLabel();
     renderAll();
     setTimeout(() => syncWithCloud(), 100);
   }
 
-  function updateMonthLabel() {
-    document.getElementById('currentMonthLabel').textContent = `${currentYear}年 ${currentMonth + 1}月`;
+  function updatePeriodLabel() {
+    if (viewMode === 'month') {
+      document.getElementById('currentPeriodLabel').textContent = `${currentYear}年 ${currentMonth + 1}月`;
+      document.getElementById('netProfitLabel').textContent = '本月淨利結餘';
+      document.getElementById('incomeTitleLabel').textContent = '營收 / 收入';
+      document.getElementById('expenseTitleLabel').textContent = '營運成本 / 支出';
+      document.getElementById('countLabel').textContent = '月總單筆數';
+      document.getElementById('viewModeBadge').textContent = '月份模式';
+    } else {
+      document.getElementById('currentPeriodLabel').textContent = `${currentYear}年度`;
+      document.getElementById('netProfitLabel').textContent = '年度淨利結餘';
+      document.getElementById('incomeTitleLabel').textContent = '年度總收入';
+      document.getElementById('expenseTitleLabel').textContent = '年度總支出';
+      document.getElementById('countLabel').textContent = '年度總筆數';
+      document.getElementById('viewModeBadge').textContent = '年度模式';
+    }
   }
 
-  function changeMonth(delta) {
-    currentMonth += delta;
-    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
-    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  function toggleViewMode() {
+    viewMode = viewMode === 'month' ? 'year' : 'month';
+    updatePeriodLabel();
+    renderAll();
+  }
 
-    const today = new Date();
-    if (today.getFullYear() === currentYear && today.getMonth() === currentMonth) {
-      selectedDateStr = formatDateYMD(today);
+  function changePeriod(delta) {
+    if (viewMode === 'month') {
+      currentMonth += delta;
+      if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+      if (currentMonth < 0) { currentMonth = 11; currentYear--; }
     } else {
-      selectedDateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
+      currentYear += delta;
     }
-
-    updateMonthLabel();
+    updatePeriodLabel();
     renderAll();
   }
 
@@ -904,16 +942,21 @@
     const parts = dateStr.split('-');
     const y = parseInt(parts[0], 10);
     const m = parseInt(parts[1], 10) - 1;
-    if (y !== currentYear || m !== currentMonth) {
+    if (y !== currentYear || (viewMode === 'month' && m !== currentMonth)) {
       currentYear = y;
-      currentMonth = m;
-      updateMonthLabel();
+      if (viewMode === 'month') currentMonth = m;
+      updatePeriodLabel();
     }
     renderAll();
   }
 
   function getFilteredTransactions() {
-    const prefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+    let prefix = '';
+    if (viewMode === 'month') {
+      prefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+    } else {
+      prefix = `${currentYear}`;
+    }
     return transactions
       .filter(t => t.date && t.date.startsWith(prefix))
       .sort((a, b) => String(b.date).localeCompare(String(a.date)) || b.id - a.id);
@@ -925,10 +968,10 @@
   }
 
   function renderAll() {
-    const monthList = getFilteredTransactions();
+    const periodList = getFilteredTransactions();
     let inc = 0, exp = 0, totalDeduction = 0;
 
-    monthList.forEach(t => {
+    periodList.forEach(t => {
       if (t.type === 'income') {
         inc += t.amount;
         totalDeduction += (t.deduction || 0);
@@ -947,9 +990,24 @@
     document.getElementById('totalExpense').textContent = `$${exp.toLocaleString()}`;
     document.getElementById('totalDeduction').textContent = `$${totalDeduction.toLocaleString()}`;
 
+    // 計算筆數與均價指標
+    const incomeTxList = periodList.filter(t => t.type === 'income');
+    const totalCount = incomeTxList.length;
+    document.getElementById('statTotalCount').textContent = `${totalCount} 筆`;
+
+    // 計算日單平均筆數與日單均價
+    // 找出這段期間內有實際產生收入的天數（或月份模式用當月天數/年度用有紀錄天數）
+    const uniqueDays = new Set(incomeTxList.map(t => t.date)).size;
+    const activeDays = uniqueDays > 0 ? uniqueDays : 1;
+    const dailyAvgCount = (totalCount / activeDays).toFixed(1);
+    document.getElementById('statDailyAvgCount').textContent = `${dailyAvgCount} 筆/日`;
+
+    const dailyAvgPrice = totalCount > 0 ? Math.round(inc / totalCount) : 0;
+    document.getElementById('statDailyAvgPrice').textContent = `$${dailyAvgPrice.toLocaleString()}`;
+
     renderCalendar();
     renderSelectedDayView();
-    renderChart(monthList);
+    renderChart(periodList);
   }
 
   function renderCalendar() {
@@ -1098,8 +1156,10 @@
     const breakdownEl = document.getElementById('categoryBreakdown');
     let htmlContent = '';
 
+    const periodNameStr = viewMode === 'month' ? '本月' : '年度';
+
     if (breakdownItems.length === 0) {
-      htmlContent = `<div class="empty-state" style="padding:20px; border:none;">本月無${chartMode === 'expense' ? '支出' : '收入'}數據</div>`;
+      htmlContent = `<div class="empty-state" style="padding:20px; border:none;">${periodNameStr}無${chartMode === 'expense' ? '支出' : '收入'}數據</div>`;
     } else {
       const rowsHtml = breakdownItems.map(item => `
         <div class="stat-row">
@@ -1115,7 +1175,7 @@
       if (chartMode === 'income') {
         htmlContent += `
           <div style="margin-top:12px; padding-top:10px; border-top: 0.5px solid var(--border); text-align:right; font-size:13px; color:var(--text-muted);">
-            本月收入總筆數：<strong>${totalCount}</strong> 筆
+            ${periodNameStr}收入總筆數：<strong>${totalCount}</strong> 筆
           </div>
         `;
       }
@@ -1126,7 +1186,6 @@
       let percentReturnCount = 0, percentReturnTotal = 0;
       let otherDeductCount = 0, otherDeductTotal = 0;
 
-      // 1. 統計收入單中內含的回金
       list.filter(t => t.type === 'income').forEach(t => {
         let mode = t.calcMode;
         let ded = t.deduction || 0;
@@ -1153,7 +1212,6 @@
         }
       });
 
-      // 2. 統計支出單中選「回金」或「其他回金」的項目（同時也保留在上方支出項目明細中）
       filtered.forEach(t => {
         if (isFixedDeductExpense(t)) {
           fixedReturnCount += 1;
@@ -1439,7 +1497,7 @@
     const dateParts = date.split('-');
     currentYear = parseInt(dateParts[0], 10);
     currentMonth = parseInt(dateParts[1], 10) - 1;
-    updateMonthLabel();
+    updatePeriodLabel();
 
     saveDataToCloud();
     closeModal();
@@ -1527,7 +1585,7 @@
   function addNewCategory() {
     const icon = document.getElementById('newCatIcon').value.trim() || '📌';
     const name = document.getElementById('newCatName').value.trim();
-    const defaultCalc = document.getElementById('newCatDefaultCalc').value;
+    const defaultCalc = document.getElementById('newCatDefaultCalc'].value;
     const fixedReturn = parseFloat(document.getElementById('newCatFixedReturn').value);
     if (!name) {
       alert('請輸入分類名稱');
