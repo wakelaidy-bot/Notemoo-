@@ -844,7 +844,6 @@
   function init() {
     updateMonthLabel();
     renderAll();
-    // 預先載入本地離線資料確保畫面瞬間秒開，再向雲端同步
     setTimeout(() => syncWithCloud(), 100);
   }
 
@@ -903,7 +902,7 @@
         totalDeduction += (t.deduction || 0);
       } else {
         exp += t.amount;
-        if (t.category === 'deduct_fee') {
+        if (t.category === 'deduct_fee' || t.calcMode === 'opt3') {
           totalDeduction += t.amount;
         }
       }
@@ -976,7 +975,7 @@
       if (t.type === 'income') {
         dayInc += t.amount;
         dayDeduct += (t.deduction || 0);
-      } else if (t.category === 'deduct_fee') {
+      } else if (t.category === 'deduct_fee' || t.calcMode === 'opt3') {
         dayDeduct += t.amount;
       }
     });
@@ -1122,9 +1121,9 @@
       });
 
       filtered.forEach(t => {
-        if (t.category === 'deduct_fee') {
-          fixedReturnCount += 1;
-          fixedReturnTotal += t.amount;
+        if (t.category === 'deduct_fee' || t.calcMode === 'opt3') {
+          otherDeductCount += 1;
+          otherDeductTotal += t.amount;
         }
       });
 
@@ -1565,7 +1564,6 @@
     scriptEl.src = `${API_URL}?action=load&callback=${cbName}&_=${Date.now()}`;
     scriptEl.onerror = function() {
       statusEl.textContent = '離線運行';
-      // 離線降級保護：直接使用本地暫存渲染畫面，不讓行事曆跑不出來
       renderAll();
     };
     document.body.appendChild(scriptEl);
