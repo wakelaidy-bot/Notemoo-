@@ -659,7 +659,6 @@
       <div class="cal-grid" id="calendarGrid"></div>
     </div>
 
-    <!-- 當日收入靠左；當日回金往右移並放在當日小費前面 -->
     <div class="day-summary-bar">
       <div class="day-summary-stats">
         <span class="day-inc-color" id="dayTotalIncome">當日收入: $0</span>
@@ -845,32 +844,14 @@
 <script>
   const API_URL = 'https://script.google.com/macros/s/AKfycbwpHAJeapad907Fh3CCKeU2rPN_DKKDqG5Ti6Puv8xqLWO_MPPPpS2rJPKsPQczgzKI/exec';
 
-  // 收入與支出各自獨立的高對比不重複色盤
   const INCOME_PALETTE = [
-    '#FF453A', // 亮紅
-    '#64D2FF', // 天藍
-    '#FFD60A', // 金黃
-    '#BF5AF2', // 亮紫
-    '#FF9F0A', // 橘橙
-    '#FF6482', // 粉紅
-    '#5E5CE6', // 靛藍
-    '#AC8E68', // 暖沙
-    '#30B0C7', // 青綠
-    '#FF375F'  // 桃紅
+    '#FF453A', '#64D2FF', '#FFD60A', '#BF5AF2', '#FF9F0A',
+    '#FF6482', '#5E5CE6', '#AC8E68', '#30B0C7', '#FF375F'
   ];
 
   const EXPENSE_PALETTE = [
-    '#30D158', // 螢光綠
-    '#FF9F0A', // 琥珀橘
-    '#64D2FF', // 淺藍
-    '#BF5AF2', // 紫羅蘭
-    '#FF453A', // 珊瑚紅
-    '#FFD60A', // 明黃
-    '#5E5CE6', // 藍紫
-    '#30B0C7', // 湖水青
-    '#FF6482', // 玫瑰粉
-    '#AC8E68', // 棕褐
-    '#A2845E'  // 卡其
+    '#30D158', '#FF9F0A', '#64D2FF', '#BF5AF2', '#FF453A',
+    '#FFD60A', '#5E5CE6', '#30B0C7', '#FF6482', '#AC8E68', '#A2845E'
   ];
 
   const DEFAULT_CATEGORIES = {
@@ -935,7 +916,6 @@
     return fallback;
   }
 
-  // 強制讓收入與支出各自分類擁有互不重複的顏色
   function assignUniqueColorsToCategories() {
     ['income', 'expense'].forEach(type => {
       if (!Array.isArray(categories[type])) {
@@ -1251,6 +1231,31 @@
     renderChart(getFilteredTransactions());
   }
 
+  function computeIncomeBreakdown(tx, fixedRetOverride) {
+    const fixedRet = (fixedRetOverride !== undefined && fixedRetOverride !== null)
+      ? Number(fixedRetOverride)
+      : (tx.fixedReturn !== undefined && tx.fixedReturn !== null ? Number(tx.fixedReturn) : 20);
+    const tipFee = getTxTipAmount(tx);
+    let raw = tx.rawAmount;
+    if (raw === undefined || raw === null) {
+      raw = Math.max(0, (tx.amount || 0) + (tx.deduction || 0) - tipFee);
+    }
+    raw = Number(raw) || 0;
+
+    if (tx.calcMode === 'opt1') {
+      const fixedPart = Math.min(raw, fixedRet);
+      return { fixedPart, percentPart: 0, otherPart: 0 };
+    }
+    if (tx.calcMode === 'opt2') {
+      const fixedPart = Math.min(raw, fixedRet);
+      const baseForPercent = Math.max(0, raw - fixedRet);
+      const percentPart = Math.floor((baseForPercent * 0.1) / 10) * 10;
+      return { fixedPart, percentPart, otherPart: 0 };
+    }
+    const otherPart = Number(tx.deduction) || 0;
+    return { fixedPart: 0, percentPart: 0, otherPart };
+  }
+
   function renderChart(list) {
     const subToggleEl = document.getElementById('expenseChartSubToggle');
     if (chartMode === 'expense') {
@@ -1354,28 +1359,18 @@
       let otherDeductCount = 0, otherDeductTotal = 0;
 
       list.filter(t => t.type === 'income').forEach(t => {
-        let mode = t.calcMode;
-        let ded = t.deduction || 0;
-
-        if (ded > 0) {
-          if (mode === 'opt1') {
+        const { fixedPart, percentPart, otherPart } = computeIncomeBreakdown(t);
+        if (t.calcMode === 'opt1') {
+          if ((t.deduction || 0) > 0 || fixedPart > 0) {
             fixedReturnCount += 1;
-            fixedReturnTotal += ded;
-          } else if (mode === 'opt2') {
-            let fixedRetVal = t.fixedReturn !== undefined ? t.fixedReturn : 20;
-            let percentDeduct = ded - fixedRetVal;
-            if (fixedRetVal > 0) {
-              fixedReturnCount += 1;
-              fixedReturnTotal += fixedRetVal;
-            }
-            if (percentDeduct > 0) {
-              percentReturnCount += 1;
-              percentReturnTotal += percentDeduct;
-            }
-          } else {
-            otherDeductCount += 1;
-            otherDeductTotal += ded;
+            fixedReturnTotal += (t.deduction || fixedPart);
           }
+        } else if (t.calcMode === 'opt2') {
+          percentReturnCount += 1;
+          percentReturnTotal += percentPart;
+        } else if (otherPart > 0) {
+          otherDeductCount += 1;
+          otherDeductTotal += otherPart;
         }
       });
 
@@ -1462,26 +1457,25 @@
 
   // 小費為額外金額，在回金計算完成後才加上去，不參與回金計算
   function calculateFinalIncome(rawAmount, mode) {
+    const tipFee = getActiveTipFee();
     if (!rawAmount || rawAmount <= 0) {
-      const tipFee = getActiveTipFee();
-      return { final: tipFee, deduction: 0 };
+      return { final: tipFee, deduction: 0, fixedPart: 0, percentPart: 0 };
     }
     const fixedRet = getActiveFixedReturn();
-    const tipFee = getActiveTipFee();
 
     if (mode === 'opt1') {
-      const deduction = Math.min(rawAmount, fixedRet);
-      const baseNet = Math.max(0, rawAmount - deduction);
-      return { final: baseNet + tipFee, deduction };
+      const fixedPart = Math.min(rawAmount, fixedRet);
+      const baseNet = Math.max(0, rawAmount - fixedPart);
+      return { final: baseNet + tipFee, deduction: fixedPart, fixedPart, percentPart: 0 };
     } else if (mode === 'opt2') {
       const fixedPart = Math.min(rawAmount, fixedRet);
       const baseForPercent = Math.max(0, rawAmount - fixedRet);
       const percentPart = Math.floor((baseForPercent * 0.1) / 10) * 10;
       const deduction = Math.min(rawAmount, fixedPart + percentPart);
       const baseNet = Math.max(0, rawAmount - deduction);
-      return { final: baseNet + tipFee, deduction };
+      return { final: baseNet + tipFee, deduction, fixedPart, percentPart };
     } else {
-      return { final: rawAmount + tipFee, deduction: 0 };
+      return { final: rawAmount + tipFee, deduction: 0, fixedPart: 0, percentPart: 0 };
     }
   }
 
@@ -1500,7 +1494,7 @@
 
     let formulaLabel = '公式：(總金額 - 固定回金) + 小費';
     if (currentCalcMode === 'opt1') formulaLabel = '公式：(總金額 - 固定回金) + 小費';
-    if (currentCalcMode === 'opt2') formulaLabel = '公式：(總金額 - (固定 + (總金額-固定)×10%去尾)) + 小費';
+    if (currentCalcMode === 'opt2') formulaLabel = `公式：(總金額 - 固定$${res.fixedPart} - 百回$${res.percentPart}) + 小費`;
     if (currentCalcMode === 'opt3') formulaLabel = '公式：總金額 + 小費（不扣回金）';
 
     document.getElementById('calcFormulaText').textContent = formulaLabel;
@@ -1638,8 +1632,8 @@
       deduction = res.deduction;
       fixedRet = getActiveFixedReturn();
 
-      let modeTag = currentCalcMode === 'opt1' ? `固定回金$${fixedRet}(原$${rawAmount})` :
-                      currentCalcMode === 'opt2' ? `固定+百回(原$${rawAmount},回$${deduction})` : '';
+      let modeTag = currentCalcMode === 'opt1' ? `固定回金$${res.fixedPart}(原$${rawAmount})` :
+                      currentCalcMode === 'opt2' ? `固定$${res.fixedPart}+百回$${res.percentPart}(原$${rawAmount},回$${deduction})` : '';
       if (tipFee > 0) {
         modeTag += `[含小費$${tipFee}]`;
       }
