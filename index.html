@@ -1231,10 +1231,11 @@
     renderChart(getFilteredTransactions());
   }
 
-  function computeIncomeBreakdown(tx, fixedRetOverride) {
-    const fixedRet = (fixedRetOverride !== undefined && fixedRetOverride !== null)
-      ? Number(fixedRetOverride)
-      : (tx.fixedReturn !== undefined && tx.fixedReturn !== null ? Number(tx.fixedReturn) : 20);
+  function getTxTotalDeduction(tx) {
+    if (typeof tx.deduction === 'number' && !isNaN(tx.deduction) && tx.deduction > 0) {
+      return tx.deduction;
+    }
+    const fixedRet = tx.fixedReturn !== undefined && tx.fixedReturn !== null ? Number(tx.fixedReturn) : 20;
     const tipFee = getTxTipAmount(tx);
     let raw = tx.rawAmount;
     if (raw === undefined || raw === null) {
@@ -1243,17 +1244,15 @@
     raw = Number(raw) || 0;
 
     if (tx.calcMode === 'opt1') {
-      const fixedPart = Math.min(raw, fixedRet);
-      return { fixedPart, percentPart: 0, otherPart: 0 };
+      return Math.min(raw, fixedRet);
     }
     if (tx.calcMode === 'opt2') {
       const fixedPart = Math.min(raw, fixedRet);
       const baseForPercent = Math.max(0, raw - fixedRet);
       const percentPart = Math.floor((baseForPercent * 0.1) / 10) * 10;
-      return { fixedPart, percentPart, otherPart: 0 };
+      return Math.min(raw, fixedPart + percentPart);
     }
-    const otherPart = Number(tx.deduction) || 0;
-    return { fixedPart: 0, percentPart: 0, otherPart };
+    return 0;
   }
 
   function renderChart(list) {
@@ -1359,18 +1358,20 @@
       let otherDeductCount = 0, otherDeductTotal = 0;
 
       list.filter(t => t.type === 'income').forEach(t => {
-        const { fixedPart, percentPart, otherPart } = computeIncomeBreakdown(t);
+        const dedTotal = getTxTotalDeduction(t);
         if (t.calcMode === 'opt1') {
-          if ((t.deduction || 0) > 0 || fixedPart > 0) {
+          if (dedTotal > 0) {
             fixedReturnCount += 1;
-            fixedReturnTotal += (t.deduction || fixedPart);
+            fixedReturnTotal += dedTotal;
           }
         } else if (t.calcMode === 'opt2') {
-          percentReturnCount += 1;
-          percentReturnTotal += percentPart;
-        } else if (otherPart > 0) {
+          if (dedTotal > 0) {
+            percentReturnCount += 1;
+            percentReturnTotal += dedTotal;
+          }
+        } else if (dedTotal > 0) {
           otherDeductCount += 1;
-          otherDeductTotal += otherPart;
+          otherDeductTotal += dedTotal;
         }
       });
 
@@ -1392,7 +1393,7 @@
             <strong class="deduct-color" style="font-variant-numeric: tabular-nums;">$${fixedReturnTotal.toLocaleString()}</strong>
           </div>
           <div class="stat-row">
-            <div>💯 百回 (比例回金) <span style="color:var(--text-muted); font-size:12px;">(${percentReturnCount}筆)</span></div>
+            <div>💯 百回 <span style="color:var(--text-muted); font-size:12px;">(${percentReturnCount}筆)</span></div>
             <strong class="deduct-color" style="font-variant-numeric: tabular-nums;">$${percentReturnTotal.toLocaleString()}</strong>
           </div>
           <div class="stat-row">
