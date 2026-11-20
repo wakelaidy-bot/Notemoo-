@@ -19,6 +19,7 @@
       --income: #FF453A;    /* 紅色 */
       --expense: #30D158;   /* 綠色 */
       --deduct: #FF9F0A;
+      --tip: #FFD60A;
       --day-income: #64D2FF;/* 當日收入柔和亮藍色 */
       --weekend: #FF6482;   /* 粉紅色 */
       --border: #2C2C2E;
@@ -130,6 +131,7 @@
     .inc-color { color: var(--income); }
     .exp-color { color: var(--expense); }
     .deduct-color { color: var(--deduct); }
+    .tip-color { color: var(--tip); }
     .day-inc-color { color: var(--day-income); }
 
     .segment-control {
@@ -159,7 +161,7 @@
       background: var(--card);
       border-radius: 20px;
       padding: 14px 10px;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
       border: 0.5px solid var(--border);
     }
     .cal-weekdays {
@@ -236,20 +238,25 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 4px 4px 12px;
-    }
-    .day-summary-date {
-      font-size: 15px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      padding: 6px 4px 12px;
+      gap: 8px;
+      flex-wrap: wrap;
     }
     .day-summary-stats {
-      text-align: right;
-      font-size: 13px;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12.5px;
       font-weight: 600;
       font-variant-numeric: tabular-nums;
+      gap: 8px;
+    }
+    .day-stat-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
     .chart-card {
@@ -652,14 +659,14 @@
       <div class="cal-grid" id="calendarGrid"></div>
     </div>
 
+    <!-- 已移除日期標題；當日收入、當日回金靠左，當日小費顯示在最右邊 -->
     <div class="day-summary-bar">
-      <div class="day-summary-date">
-        <span>📅</span>
-        <span id="selectedDateTitle">2026年11月18日</span>
-      </div>
       <div class="day-summary-stats">
-        <span class="day-inc-color" id="dayTotalIncome">當日收入: $0</span>
-        <span class="deduct-color" id="dayTotalDeduction" style="margin-left:8px;">當日回金: $0</span>
+        <div class="day-stat-group">
+          <span class="day-inc-color" id="dayTotalIncome">當日收入: $0</span>
+          <span class="deduct-color" id="dayTotalDeduction">當日回金: $0</span>
+        </div>
+        <span class="tip-color" id="dayTotalTip">當日小費: $0</span>
       </div>
     </div>
 
@@ -701,7 +708,6 @@
         </div>
       </div>
       
-      <!-- 優化後的指標區塊：日單均價與日均營收（移除總筆數與回金占比） -->
       <div style="margin-top:14px; padding-top:12px; border-top: 0.5px solid var(--border); display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; text-align:center;">
         <div style="background:var(--card-elevated); padding:8px 4px; border-radius:10px;">
           <span style="font-size:10px; color:var(--text-muted); display:block; margin-bottom:2px;" id="countLabel">日單均價</span>
@@ -720,7 +726,6 @@
         <button class="header-btn" onclick="toggleChartType()" id="chartToggleBtn">切換支出統計</button>
       </div>
       
-      <!-- 支出圓餅圖檢視模式切換 (全部支出 vs 純營運成本) -->
       <div id="expenseChartSubToggle" style="display:none; gap:6px; margin-bottom:12px;">
         <button class="header-btn" id="expSubAllBtn" style="font-size:11px; padding:4px 10px; background:var(--accent); color:#fff;" onclick="setExpenseViewMode('all')">全部支出</button>
         <button class="header-btn" id="expSubOpBtn" style="font-size:11px; padding:4px 10px;" onclick="setExpenseViewMode('op')">純營運成本(不含回金)</button>
@@ -744,7 +749,6 @@
         <button id="btnTypeInc" class="active-inc" onclick="setTxType('income')">收入</button>
         <button id="btnTypeExp" onclick="setTxType('expense')">支出</button>
       </div>
-      <!-- 取消在左側，右上角儲存按鈕已移除 -->
       <button style="background:none; border:none; color:var(--text-muted); font-size:15px;" onclick="closeModal()">取消</button>
     </div>
 
@@ -775,9 +779,7 @@
         </div>
         <div class="fixed-return-adjust">
           <span>小費：</span>
-          <select id="inputTipFee" onchange="updateCalcPreview()">
-            <!-- 0 到 300 以 10 為單位 -->
-          </select>
+          <select id="inputTipFee" onchange="updateCalcPreview()"></select>
         </div>
       </div>
       
@@ -843,30 +845,57 @@
 <script>
   const API_URL = 'https://script.google.com/macros/s/AKfycbwpHAJeapad907Fh3CCKeU2rPN_DKKDqG5Ti6Puv8xqLWO_MPPPpS2rJPKsPQczgzKI/exec';
 
+  // 收入與支出各自獨立的高對比不重複色盤
+  const INCOME_PALETTE = [
+    '#FF453A', // 亮紅
+    '#64D2FF', // 天藍
+    '#FFD60A', // 金黃
+    '#BF5AF2', // 亮紫
+    '#FF9F0A', // 橘橙
+    '#FF6482', // 粉紅
+    '#5E5CE6', // 靛藍
+    '#AC8E68', // 暖沙
+    '#30B0C7', // 青綠
+    '#FF375F'  // 桃紅
+  ];
+
+  const EXPENSE_PALETTE = [
+    '#30D158', // 螢光綠
+    '#FF9F0A', // 琥珀橘
+    '#64D2FF', // 淺藍
+    '#BF5AF2', // 紫羅蘭
+    '#FF453A', // 珊瑚紅
+    '#FFD60A', // 明黃
+    '#5E5CE6', // 藍紫
+    '#30B0C7', // 湖水青
+    '#FF6482', // 玫瑰粉
+    '#AC8E68', // 棕褐
+    '#A2845E'  // 卡其
+  ];
+
   const DEFAULT_CATEGORIES = {
     income: [
       { id: 'fare', name: '車資/趟次', icon: '🚕', color: '#FF453A', defaultCalc: 'opt2', fixedReturn: 20 },
-      { id: 'delivery', name: '外送/貨運', icon: '🛵', color: '#FF6961', defaultCalc: 'opt1', fixedReturn: 20 },
+      { id: 'delivery', name: '外送/貨運', icon: '🛵', color: '#64D2FF', defaultCalc: 'opt1', fixedReturn: 20 },
       { id: 'bonus', name: '達標獎金', icon: '🏆', color: '#FFD60A', defaultCalc: 'opt3', fixedReturn: 20 },
       { id: 'tip', name: '小費/額外', icon: '💵', color: '#BF5AF2', defaultCalc: 'opt3', fixedReturn: 20 },
-      { id: 'salary', name: '固定薪資', icon: '💼', color: '#0A84FF', defaultCalc: 'opt3', fixedReturn: 20 },
-      { id: 'other_inc', name: '其他收入', icon: '✨', color: '#AC8E68', defaultCalc: 'opt3', fixedReturn: 20 }
+      { id: 'salary', name: '固定薪資', icon: '💼', color: '#FF9F0A', defaultCalc: 'opt3', fixedReturn: 20 },
+      { id: 'other_inc', name: '其他收入', icon: '✨', color: '#FF6482', defaultCalc: 'opt3', fixedReturn: 20 }
     ],
     expense: [
       { id: 'deduct_fee', name: '回金', icon: '🔄', color: '#FF9F0A', defaultCalc: 'opt3', fixedReturn: 20 },
-      { id: 'other_deduct_fee', name: '其他回金', icon: '🔁', color: '#FFB340', defaultCalc: 'opt3', fixedReturn: 20 },
+      { id: 'other_deduct_fee', name: '其他回金', icon: '🔁', color: '#FFD60A', defaultCalc: 'opt3', fixedReturn: 20 },
       { id: 'fuel', name: '加油/充電', icon: '⛽', color: '#30D158', defaultCalc: 'opt3', fixedReturn: 20 },
-      { id: 'food', name: '餐飲補給', icon: '🍱', color: '#32D74B', defaultCalc: 'opt3', fixedReturn: 20 },
-      { id: 'maint', name: '保養維修', icon: '🔧', color: '#64D2FF', defaultCalc: 'opt3', fixedReturn: 20 },
+      { id: 'food', name: '餐飲補給', icon: '🍱', color: '#64D2FF', defaultCalc: 'opt3', fixedReturn: 20 },
+      { id: 'maint', name: '保養維修', icon: '🔧', color: '#BF5AF2', defaultCalc: 'opt3', fixedReturn: 20 },
       { id: 'toll', name: '停車/過路', icon: '🅿️', color: '#5E5CE6', defaultCalc: 'opt3', fixedReturn: 20 },
-      { id: 'comm', name: '通訊/平台', icon: '📱', color: '#FFD60A', defaultCalc: 'opt3', fixedReturn: 20 },
-      { id: 'tax', name: '保險/稅金', icon: '📄', color: '#BF5AF2', defaultCalc: 'opt3', fixedReturn: 20 },
-      { id: 'life', name: '日常雜支', icon: '🛒', color: '#AC8E68', defaultCalc: 'opt3', fixedReturn: 20 },
-      { id: 'other_exp', name: '其他支出', icon: '📦', color: '#8E8E93', defaultCalc: 'opt3', fixedReturn: 20 }
+      { id: 'comm', name: '通訊/平台', icon: '📱', color: '#FF453A', defaultCalc: 'opt3', fixedReturn: 20 },
+      { id: 'tax', name: '保險/稅金', icon: '📄', color: '#30B0C7', defaultCalc: 'opt3', fixedReturn: 20 },
+      { id: 'life', name: '日常雜支', icon: '🛒', color: '#FF6482', defaultCalc: 'opt3', fixedReturn: 20 },
+      { id: 'other_exp', name: '其他支出', icon: '📦', color: '#AC8E68', defaultCalc: 'opt3', fixedReturn: 20 }
     ]
   };
 
-  const PALETTE = ['#FF453A', '#FF6961', '#FF9F0A', '#FFD60A', '#30D158', '#32D74B', '#0A84FF', '#64D2FF', '#BF5AF2'];
   const FIXED_RETURN_OPTIONS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 
   let categories = JSON.parse(localStorage.getItem('driver_categories_v1')) || DEFAULT_CATEGORIES;
@@ -887,6 +916,42 @@
   let chartMode = 'income';
   let chartInstance = null;
 
+  function getPaletteForType(type) {
+    return type === 'expense' ? EXPENSE_PALETTE : INCOME_PALETTE;
+  }
+
+  function getDistinctColor(type, index, usedColors) {
+    const palette = getPaletteForType(type);
+    for (let i = 0; i < palette.length; i++) {
+      const candidate = palette[(index + i) % palette.length];
+      if (!usedColors.has(candidate)) {
+        usedColors.add(candidate);
+        return candidate;
+      }
+    }
+    // 若項目超過色盤數量，產生不重複的 HSL 色相
+    const hue = ((index * 137.508) % 360).toFixed(0);
+    const fallback = `hsl(${hue}, 82%, 60%)`;
+    usedColors.add(fallback);
+    return fallback;
+  }
+
+  function normalizeCategoryColors() {
+    ['income', 'expense'].forEach(type => {
+      if (!Array.isArray(categories[type])) {
+        categories[type] = DEFAULT_CATEGORIES[type];
+      }
+      const used = new Set();
+      categories[type].forEach((cat, idx) => {
+        if (!cat.color || used.has(cat.color)) {
+          cat.color = getDistinctColor(type, idx, used);
+        } else {
+          used.add(cat.color);
+        }
+      });
+    });
+  }
+
   function initTipSelect() {
     const tipSelect = document.getElementById('inputTipFee');
     if (!tipSelect) return;
@@ -902,14 +967,25 @@
     const hasOtherDeduct = categories.expense.some(c => c.id === 'other_deduct_fee' || c.name === '其他回金');
     if (!hasOtherDeduct) {
       const deductIdx = categories.expense.findIndex(c => c.id === 'deduct_fee');
-      const newItem = { id: 'other_deduct_fee', name: '其他回金', icon: '🔁', color: '#FFB340', defaultCalc: 'opt3', fixedReturn: 20 };
+      const newItem = { id: 'other_deduct_fee', name: '其他回金', icon: '🔁', color: '#FFD60A', defaultCalc: 'opt3', fixedReturn: 20 };
       if (deductIdx !== -1) {
         categories.expense.splice(deductIdx + 1, 0, newItem);
       } else {
         categories.expense.unshift(newItem);
       }
-      localStorage.setItem('driver_categories_v1', JSON.stringify(categories));
     }
+    normalizeCategoryColors();
+    localStorage.setItem('driver_categories_v1', JSON.stringify(categories));
+  }
+
+  function getTxTipAmount(tx) {
+    if (tx.type !== 'income') return 0;
+    if (typeof tx.tipFee === 'number' && !isNaN(tx.tipFee)) return tx.tipFee;
+    if (tx.note) {
+      const match = String(tx.note).match(/\[含小費\$(\d+(?:\.\d+)?)\]/);
+      if (match) return parseFloat(match[1]) || 0;
+    }
+    return 0;
   }
 
   function isOtherDeductExpense(tx) {
@@ -1112,19 +1188,19 @@
   }
 
   function renderSelectedDayView() {
-    const parts = selectedDateStr.split('-');
-    document.getElementById('selectedDateTitle').textContent = `${parts[0]}年${parseInt(parts[1], 10)}月${parseInt(parts[2], 10)}日`;
-
     const dayList = transactions
       .filter(t => t.date === selectedDateStr)
       .sort((a, b) => b.id - a.id);
 
     let dayInc = 0;
     let dayDeduct = 0;
+    let dayTip = 0;
+
     dayList.forEach(t => {
       if (t.type === 'income') {
         dayInc += t.amount;
         dayDeduct += (t.deduction || 0);
+        dayTip += getTxTipAmount(t);
       } else if (isFixedDeductExpense(t) || isOtherDeductExpense(t)) {
         dayDeduct += t.amount;
       }
@@ -1132,6 +1208,7 @@
 
     document.getElementById('dayTotalIncome').textContent = `當日收入: $${dayInc.toLocaleString()}`;
     document.getElementById('dayTotalDeduction').textContent = `當日回金: $${dayDeduct.toLocaleString()}`;
+    document.getElementById('dayTotalTip').textContent = `當日小費: $${dayTip.toLocaleString()}`;
 
     const container = document.getElementById('listView');
     if (dayList.length === 0) {
@@ -1187,7 +1264,7 @@
     }
 
     let filtered = list.filter(t => t.type === chartMode);
-    
+
     if (chartMode === 'expense' && expenseViewMode === 'op') {
       filtered = filtered.filter(t => !isFixedDeductExpense(t) && !isOtherDeductExpense(t) && t.category !== 'deduct_fee' && t.category !== 'other_deduct_fee');
     }
@@ -1204,47 +1281,59 @@
       grandTotal += t.amount;
     });
 
-    const labels = [];
-    const data = [];
-    const colors = [];
-    const breakdownItems = [];
+    const usedColors = new Set();
+    const rawItems = [];
 
-    catList.forEach(cat => {
+    catList.forEach((cat, idx) => {
       if (chartMode === 'expense' && expenseViewMode === 'op' && (cat.id === 'deduct_fee' || cat.id === 'other_deduct_fee')) {
         return;
       }
       if (totals[cat.id]) {
-        labels.push(cat.name);
-        data.push(totals[cat.id]);
-        const catColor = cat.color || '#0A84FF';
-        colors.push(catColor);
         const pct = grandTotal > 0 ? ((totals[cat.id] / grandTotal) * 100).toFixed(1) : 0;
         const count = counts[cat.id] || 0;
-        breakdownItems.push({ ...cat, amount: totals[cat.id], pct, count, color: catColor });
+        const preferredColor = cat.color && !usedColors.has(cat.color)
+          ? (usedColors.add(cat.color), cat.color)
+          : getDistinctColor(chartMode, idx, usedColors);
+        rawItems.push({
+          ...cat,
+          amount: totals[cat.id],
+          pct,
+          count,
+          color: preferredColor
+        });
         delete totals[cat.id];
         delete counts[cat.id];
       }
     });
 
-    Object.keys(totals).forEach(unknownId => {
+    Object.keys(totals).forEach((unknownId, idx) => {
       const pct = grandTotal > 0 ? ((totals[unknownId] / grandTotal) * 100).toFixed(1) : 0;
       const count = counts[unknownId] || 0;
-      labels.push('其他歷史分類');
-      data.push(totals[unknownId]);
-      colors.push('#8E8E93');
-      breakdownItems.push({ name: '其他歷史分類', icon: '📝', amount: totals[unknownId], pct, count, color: '#8E8E93' });
+      const fallbackColor = getDistinctColor(chartMode, catList.length + idx, usedColors);
+      rawItems.push({
+        name: '其他歷史分類',
+        icon: '📝',
+        amount: totals[unknownId],
+        pct,
+        count,
+        color: fallbackColor
+      });
     });
 
-    breakdownItems.sort((a, b) => b.amount - a.amount);
+    rawItems.sort((a, b) => b.amount - a.amount);
+
+    const labels = rawItems.map(item => item.name);
+    const data = rawItems.map(item => item.amount);
+    const colors = rawItems.map(item => item.color);
 
     const breakdownEl = document.getElementById('categoryBreakdown');
     let htmlContent = '';
     const periodNameStr = viewMode === 'month' ? '本月' : '年度';
 
-    if (breakdownItems.length === 0) {
+    if (rawItems.length === 0) {
       htmlContent = `<div class="empty-state" style="padding:20px; border:none;">${periodNameStr}無${chartMode === 'expense' ? (expenseViewMode==='op'?'純營運成本':'支出') : '收入'}數據</div>`;
     } else {
-      const rowsHtml = breakdownItems.map(item => `
+      const rowsHtml = rawItems.map(item => `
         <div class="stat-row">
           <div style="display:flex; align-items:center; gap:8px;">
             <span style="width:10px; height:10px; border-radius:50%; background:${item.color}; display:inline-block; flex-shrink:0;"></span>
@@ -1335,7 +1424,8 @@
         datasets: [{
           data: data.length ? data : [1],
           backgroundColor: data.length ? colors : ['#2C2C2E'],
-          borderWidth: 0
+          borderColor: '#161618',
+          borderWidth: data.length > 1 ? 2 : 0
         }]
       },
       options: {
@@ -1445,10 +1535,11 @@
     let restoredRaw = tx.rawAmount;
     let restoredMode = tx.calcMode;
     let restoredFixed = tx.fixedReturn;
+    let restoredTip = getTxTipAmount(tx);
     let cleanNote = tx.note || '';
 
     if (restoredRaw === undefined) {
-      restoredRaw = tx.type === 'income' ? (tx.amount + (tx.deduction || 0)) : tx.amount;
+      restoredRaw = tx.type === 'income' ? (tx.amount + (tx.deduction || 0) - restoredTip) : tx.amount;
       restoredMode = (tx.deduction && tx.deduction > 0) ? 'opt1' : 'opt3';
       restoredFixed = 20;
     }
@@ -1459,7 +1550,7 @@
     if (tx.type === 'income') {
       const validFixed = FIXED_RETURN_OPTIONS.includes(Number(restoredFixed)) ? Number(restoredFixed) : 20;
       document.getElementById('inputFixedReturn').value = String(validFixed);
-      document.getElementById('inputTipFee').value = '0';
+      document.getElementById('inputTipFee').value = String(restoredTip);
       setCalcMode(restoredMode || 'opt3');
     }
 
@@ -1565,6 +1656,7 @@
       amount: finalAmount,
       deduction: deduction,
       rawAmount: rawAmount,
+      tipFee: currentTxType === 'income' ? tipFee : 0,
       calcMode: currentTxType === 'income' ? currentCalcMode : null,
       fixedReturn: currentTxType === 'income' ? fixedRet : null,
       date,
@@ -1636,6 +1728,7 @@
     container.innerHTML = list.map((cat, idx) => `
       <div class="manage-cat-item">
         <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+          <span style="width:10px; height:10px; border-radius:50%; background:${cat.color || '#0A84FF'}; display:inline-block; flex-shrink:0;"></span>
           <span style="font-size:18px; flex-shrink:0;">${cat.icon}</span>
           <span style="font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(cat.name)}</span>
         </div>
@@ -1678,7 +1771,8 @@
       alert('請輸入分類名稱');
       return;
     }
-    const color = PALETTE[categories[manageCatType].length % PALETTE.length];
+    const usedColors = new Set((categories[manageCatType] || []).map(c => c.color));
+    const color = getDistinctColor(manageCatType, (categories[manageCatType] || []).length, usedColors);
     const newCat = {
       id: 'custom_' + Date.now(),
       name,
