@@ -170,6 +170,33 @@
       margin-bottom: 12px;
       border: 0.5px solid var(--border);
     }
+    .cal-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 4px 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .cal-legend {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+    }
+    .cal-legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .cal-exp-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--expense);
+      display: inline-block;
+      flex-shrink: 0;
+    }
     .cal-weekdays {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
@@ -205,6 +232,13 @@
       background: rgba(10, 132, 255, 0.16);
       border-color: var(--accent);
     }
+    .cal-day-top {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      margin-bottom: 4px;
+    }
     .cal-day-num {
       width: 24px;
       height: 24px;
@@ -214,7 +248,6 @@
       justify-content: center;
       font-size: 13px;
       font-weight: 600;
-      margin-bottom: 4px;
     }
     .cal-cell.weekend .cal-day-num { color: var(--weekend); }
     .cal-cell.today .cal-day-num {
@@ -466,6 +499,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
       gap: 8px;
       margin-top: 16px;
       padding-top: 14px;
@@ -478,6 +512,7 @@
     .backup-btns {
       display: flex;
       gap: 6px;
+      flex-wrap: wrap;
     }
 
     .tx-list {
@@ -880,6 +915,13 @@
   <!-- 首頁：月行事曆 + 當日收支明細 -->
   <div id="calendarView">
     <div class="calendar-card">
+      <div class="cal-toolbar">
+        <div class="cal-legend">
+          <span class="cal-legend-item"><span class="cal-badge-inc" style="padding:1px 4px;">$</span>收入</span>
+          <span class="cal-legend-item"><span class="cal-exp-dot"></span>有支出</span>
+        </div>
+        <button type="button" class="header-btn" style="padding:3px 9px; font-size:11px;" onclick="jumpToToday()">今天</button>
+      </div>
       <div class="cal-weekdays">
         <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
       </div>
@@ -997,11 +1039,13 @@
       <div id="categoryBreakdown" style="margin-top: 10px;"></div>
 
       <div class="backup-bar">
-        <span class="backup-title">本地備份 / 試算表對帳</span>
+        <span class="backup-title">本地備份 / 還原</span>
         <div class="backup-btns">
+          <button class="header-btn" onclick="triggerImportJson()">匯入還原</button>
           <button class="header-btn" onclick="exportData('json')">匯出 JSON</button>
           <button class="header-btn" onclick="exportData('csv')">匯出 CSV</button>
         </div>
+        <input type="file" id="importJsonInput" accept="application/json,.json" style="display:none;" onchange="handleImportJsonFile(event)" />
       </div>
     </div>
   </div>
@@ -1375,6 +1419,17 @@
     renderWeeklyOverview();
   }
 
+  function jumpToToday() {
+    const now = new Date();
+    const todayStr = formatDateYMD(now);
+    selectedDateStr = todayStr;
+    weekAnchorDate = now;
+    currentYear = now.getFullYear();
+    currentMonth = now.getMonth();
+    updatePeriodLabel();
+    renderAll();
+  }
+
   function selectDate(dateStr) {
     selectedDateStr = dateStr;
     weekAnchorDate = parseDateYMD(dateStr);
@@ -1623,9 +1678,11 @@
 
     transactions.forEach(t => {
       if (!t.date) return;
-      if (!dailyStats[t.date]) dailyStats[t.date] = { inc: 0 };
+      if (!dailyStats[t.date]) dailyStats[t.date] = { inc: 0, hasExp: false };
       if (t.type === 'income') {
         dailyStats[t.date].inc += t.amount;
+      } else if (t.type === 'expense' && (t.amount || 0) > 0) {
+        dailyStats[t.date].hasExp = true;
       }
     });
 
@@ -1646,11 +1703,15 @@
 
       const stat = dailyStats[cellDateStr];
       const incHtml = stat && stat.inc > 0 ? `<div class="cal-badge-inc">$${stat.inc.toLocaleString()}</div>` : '';
+      const expDotHtml = stat && stat.hasExp ? `<span class="cal-exp-dot" title="當日有支出"></span>` : '';
 
       html += `
         <div class="cal-cell ${isOtherMonth ? 'other-month' : ''} ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''} ${isWeekend ? 'weekend' : ''}"
              onclick="selectDate('${cellDateStr}')">
-          <div class="cal-day-num">${cellDate.getDate()}</div>
+          <div class="cal-day-top">
+            <div class="cal-day-num">${cellDate.getDate()}</div>
+            ${expDotHtml}
+          </div>
           ${incHtml}
         </div>
       `;
@@ -2276,6 +2337,69 @@
     markLocalDirty();
     saveDataToCloud();
     renderAll();
+  }
+
+  function triggerImportJson() {
+    const input = document.getElementById('importJsonInput');
+    if (input) {
+      input.value = '';
+      input.click();
+    }
+  }
+
+  function handleImportJsonFile(event) {
+    const file = event && event.target && event.target.files && event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const parsed = JSON.parse(String(e.target.result || ''));
+        const importedRecords = Array.isArray(parsed)
+          ? parsed
+          : (Array.isArray(parsed.records) ? parsed.records : (Array.isArray(parsed.transactions) ? parsed.transactions : null));
+
+        if (!importedRecords) {
+          alert('JSON 格式不符，找不到 records 紀錄陣列');
+          return;
+        }
+
+        if (!confirm(`確定要以「${file.name}」（共 ${importedRecords.length} 筆紀錄）覆蓋目前帳本嗎？`)) {
+          return;
+        }
+
+        transactions = importedRecords;
+        if (parsed && !Array.isArray(parsed) && parsed.categories && typeof parsed.categories === 'object') {
+          categories = parsed.categories;
+          ensureDefaultCategories();
+        }
+        if (parsed && !Array.isArray(parsed) && parsed.targets && typeof parsed.targets === 'object') {
+          targets = {
+            month: Number(parsed.targets.month) >= 0 ? Number(parsed.targets.month) : targets.month,
+            year: Number(parsed.targets.year) >= 0 ? Number(parsed.targets.year) : targets.year
+          };
+        }
+
+        if (transactions.length > 0 && transactions[0].date) {
+          selectedDateStr = transactions[0].date;
+          weekAnchorDate = parseDateYMD(selectedDateStr);
+          const p = selectedDateStr.split('-');
+          if (p.length >= 2) {
+            currentYear = parseInt(p[0], 10) || currentYear;
+            currentMonth = (parseInt(p[1], 10) - 1) || 0;
+            updatePeriodLabel();
+          }
+        }
+
+        markLocalDirty();
+        saveDataToCloud();
+        renderAll();
+        alert('已匯入 JSON 備份並更新帳本');
+      } catch (err) {
+        alert('無法讀取 JSON 檔案，請確認檔案內容是否完整');
+      }
+    };
+    reader.readAsText(file, 'utf-8');
   }
 
   function exportData(type) {
