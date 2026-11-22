@@ -238,8 +238,8 @@
 
     .day-summary-bar {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
+      gap: 6px;
       padding: 6px 4px 12px;
     }
     .day-summary-stats {
@@ -258,6 +258,15 @@
       gap: 10px;
       flex-wrap: wrap;
       justify-content: flex-end;
+    }
+    .day-count-meta {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
     }
 
     .chart-card {
@@ -885,6 +894,10 @@
           <span class="tip-color" id="dayTotalTip">當日小費: $0</span>
         </div>
       </div>
+      <div class="day-count-meta">
+        <span id="daySelectedDateLabel">日期：--</span>
+        <span id="dayOrderCountText">當日單數: 0 筆</span>
+      </div>
     </div>
 
     <div id="listView" class="tx-list"></div>
@@ -1149,6 +1162,8 @@
   let categories = JSON.parse(localStorage.getItem('driver_categories_v1')) || DEFAULT_CATEGORIES;
   let transactions = JSON.parse(localStorage.getItem('driver_ledger_v1')) || [];
   let targets = JSON.parse(localStorage.getItem('driver_targets_v1')) || { month: 60000, year: 800000 };
+  let localUpdatedAt = Number(localStorage.getItem('driver_ledger_updated_at_v1') || 0);
+  let pendingCloudPush = localStorage.getItem('driver_ledger_pending_push_v1') === '1';
 
   let currentYear = new Date().getFullYear();
   let currentMonth = new Date().getMonth();
@@ -1159,12 +1174,27 @@
 
   let currentTxType = 'income';
   let selectedCategory = categories.income[0]?.id || 'fare';
+  let lastSavedType = null;
+  let lastSavedCategory = null;
+  let lastSavedDate = null;
   let currentCalcMode = 'opt1';
   let editingTxId = null;
   let manageCatType = 'income';
   let chartMode = 'income';
   let chartInstance = null;
   let weeklyChartInstance = null;
+
+  function markLocalDirty() {
+    localUpdatedAt = Date.now();
+    pendingCloudPush = true;
+    localStorage.setItem('driver_ledger_updated_at_v1', String(localUpdatedAt));
+    localStorage.setItem('driver_ledger_pending_push_v1', '1');
+  }
+
+  function clearLocalDirty() {
+    pendingCloudPush = false;
+    localStorage.setItem('driver_ledger_pending_push_v1', '0');
+  }
 
   function parseDateYMD(str) {
     const parts = String(str).split('-');
@@ -1386,6 +1416,7 @@
         if (viewMode === 'month') targets.month = val;
         else targets.year = val;
         localStorage.setItem('driver_targets_v1', JSON.stringify(targets));
+        markLocalDirty();
         saveDataToCloud();
         renderAll();
       } else {
@@ -1461,6 +1492,7 @@
     let weekTotalInc = 0;
     let weekTipTotal = 0;
     let weekDeductTotal = 0;
+    let weekOrderCount = 0;
     let peakVal = -1;
     let peakLabel = '—';
 
@@ -1476,6 +1508,7 @@
           weekTotalInc += t.amount;
           weekTipTotal += getTxTipAmount(t);
           weekDeductTotal += (t.deduction || 0);
+          weekOrderCount += 1;
         } else if (isFixedDeductExpense(t) || isOtherDeductExpense(t)) {
           weekDeductTotal += t.amount;
         }
@@ -1501,7 +1534,7 @@
     const weekNetIncome = Math.max(0, weekTotalInc - weekTipTotal);
 
     document.getElementById('weeklyTotalAmount').textContent = `$${weekTotalInc.toLocaleString()}`;
-    document.getElementById('weeklyPeakNote').textContent = `本週單日最高：${peakVal > 0 ? peakLabel : '尚無收入'}`;
+    document.getElementById('weeklyPeakNote').textContent = `本週單日最高：${peakVal > 0 ? peakLabel : '尚無收入'} · 共 ${weekOrderCount} 單`;
 
     document.getElementById('weeklyDaysRow').innerHTML = dayMeta.map(m => `
       <div class="weekly-day-pill ${m.dateStr === selectedDateStr ? 'selected' : ''} ${m.isWeekend ? 'weekend' : ''}"
@@ -1512,6 +1545,10 @@
     `).join('');
 
     document.getElementById('weeklyBreakdownList').innerHTML = `
+      <div class="stat-row">
+        <span>本週收入單數</span>
+        <strong style="font-variant-numeric: tabular-nums;">${weekOrderCount} 筆</strong>
+      </div>
       <div class="stat-row">
         <span>淨收入（不含小費）</span>
         <strong style="font-variant-numeric: tabular-nums;">$${weekNetIncome.toLocaleString()}</strong>
@@ -1629,12 +1666,14 @@
     let dayInc = 0;
     let dayDeduct = 0;
     let dayTip = 0;
+    let dayIncomeCount = 0;
 
     dayList.forEach(t => {
       if (t.type === 'income') {
         dayInc += t.amount;
         dayDeduct += (t.deduction || 0);
         dayTip += getTxTipAmount(t);
+        dayIncomeCount += 1;
       } else if (isFixedDeductExpense(t) || isOtherDeductExpense(t)) {
         dayDeduct += t.amount;
       }
@@ -1643,6 +1682,8 @@
     document.getElementById('dayTotalIncome').textContent = `當日收入: $${dayInc.toLocaleString()}`;
     document.getElementById('dayTotalDeduction').textContent = `當日回金: $${dayDeduct.toLocaleString()}`;
     document.getElementById('dayTotalTip').textContent = `當日小費: $${dayTip.toLocaleString()}`;
+    document.getElementById('daySelectedDateLabel').textContent = `明細日期：${selectedDateStr}`;
+    document.getElementById('dayOrderCountText').textContent = `當日單數: ${dayIncomeCount} 筆`;
 
     const container = document.getElementById('listView');
     if (dayList.length === 0) {
@@ -2051,10 +2092,21 @@
     document.getElementById('modalBackdrop').classList.add('open');
     document.getElementById('inputAmount').value = '';
     document.getElementById('inputNote').value = '';
-    document.getElementById('inputFixedReturn').value = '20';
     document.getElementById('inputTipFee').value = '0';
-    document.getElementById('inputDate').value = selectedDateStr || formatDateYMD(new Date());
-    setTxType('income');
+
+    const targetDate = lastSavedDate || selectedDateStr || formatDateYMD(new Date());
+    document.getElementById('inputDate').value = targetDate;
+
+    const targetType = lastSavedType || 'income';
+    setTxType(targetType);
+
+    if (lastSavedCategory) {
+      const exists = (categories[targetType] || []).some(c => c.id === lastSavedCategory);
+      if (exists) {
+        selectCategory(lastSavedCategory);
+      }
+    }
+    updateCalcPreview();
   }
 
   function openEditModal(id) {
@@ -2188,7 +2240,8 @@
       calcMode: currentTxType === 'income' ? currentCalcMode : null,
       fixedReturn: currentTxType === 'income' ? fixedRet : null,
       date,
-      note: cleanNote
+      note: cleanNote,
+      updatedAt: Date.now()
     };
 
     if (editingTxId) {
@@ -2200,6 +2253,10 @@
       transactions.push(txRecord);
     }
 
+    lastSavedType = currentTxType;
+    lastSavedCategory = selectedCategory;
+    lastSavedDate = date;
+
     selectedDateStr = date;
     weekAnchorDate = parseDateYMD(date);
     const dateParts = date.split('-');
@@ -2207,6 +2264,7 @@
     currentMonth = parseInt(dateParts[1], 10) - 1;
     updatePeriodLabel();
 
+    markLocalDirty();
     saveDataToCloud();
     closeModal();
     renderAll();
@@ -2215,6 +2273,7 @@
   function deleteTx(id) {
     if (!confirm('確定要刪除這筆紀錄嗎？')) return;
     transactions = transactions.filter(t => t.id !== id);
+    markLocalDirty();
     saveDataToCloud();
     renderAll();
   }
@@ -2227,6 +2286,7 @@
     if (type === 'json') {
       content = JSON.stringify({
         exportedAt: new Date().toISOString(),
+        updatedAt: localUpdatedAt,
         records: transactions,
         categories,
         targets
@@ -2268,6 +2328,7 @@
 
   function closeCatModal() {
     document.getElementById('catModalBackdrop').classList.remove('open');
+    markLocalDirty();
     saveDataToCloud();
     renderAll();
   }
@@ -2324,12 +2385,14 @@
 
   function updateCatDefaultCalc(index, val) {
     categories.income[index].defaultCalc = val;
+    markLocalDirty();
     saveDataToCloud();
   }
 
   function updateCatFixedReturn(index, val) {
     const num = parseFloat(val);
     categories.income[index].fixedReturn = isNaN(num) ? 20 : num;
+    markLocalDirty();
     saveDataToCloud();
   }
 
@@ -2356,6 +2419,7 @@
     }
     categories[manageCatType].push(newCat);
     assignUniqueColorsToCategories();
+    markLocalDirty();
     saveDataToCloud();
     document.getElementById('newCatName').value = '';
     renderManageCatList();
@@ -2369,6 +2433,7 @@
     list[index] = list[targetIndex];
     list[targetIndex] = temp;
     assignUniqueColorsToCategories();
+    markLocalDirty();
     saveDataToCloud();
     renderManageCatList();
   }
@@ -2386,8 +2451,22 @@
     if (!confirm(`確定要刪除「${list[index].name}」嗎？`)) return;
     list.splice(index, 1);
     assignUniqueColorsToCategories();
+    markLocalDirty();
     saveDataToCloud();
     renderManageCatList();
+  }
+
+  function computeRemoteTimestamp(res) {
+    if (!res) return 0;
+    if (typeof res.updatedAt === 'number' && !isNaN(res.updatedAt)) return res.updatedAt;
+    if (res.data && typeof res.data.updatedAt === 'number' && !isNaN(res.data.updatedAt)) return res.data.updatedAt;
+    const recs = Array.isArray(res.records) ? res.records : [];
+    let maxTs = 0;
+    recs.forEach(r => {
+      const ts = Number(r && (r.updatedAt || r.id) || 0);
+      if (ts > maxTs) maxTs = ts;
+    });
+    return maxTs;
   }
 
   function syncWithCloud() {
@@ -2400,8 +2479,9 @@
     const timeoutTimer = setTimeout(() => {
       if (!isDone) {
         isDone = true;
-        statusEl.textContent = '離線運行';
+        statusEl.textContent = pendingCloudPush ? '待補傳' : '離線運行';
         renderAll();
+        if (pendingCloudPush) saveDataToCloud();
       }
     }, 5000);
 
@@ -2414,21 +2494,37 @@
       if (scriptEl && scriptEl.parentNode) scriptEl.parentNode.removeChild(scriptEl);
 
       if (res && res.success) {
-        if (res.records) transactions = res.records;
-        if (res.categories) {
-          categories = res.categories;
-          ensureDefaultCategories();
-        }
-        if (res.targets) {
-          targets = res.targets;
+        const remoteTs = computeRemoteTimestamp(res);
+        const localHasNewer = pendingCloudPush || (localUpdatedAt > 0 && localUpdatedAt > remoteTs);
+
+        if (localHasNewer) {
+          localStorage.setItem('driver_ledger_v1', JSON.stringify(transactions));
+          localStorage.setItem('driver_categories_v1', JSON.stringify(categories));
           localStorage.setItem('driver_targets_v1', JSON.stringify(targets));
+          renderAll();
+          saveDataToCloud();
+        } else {
+          if (res.records) transactions = res.records;
+          if (res.categories) {
+            categories = res.categories;
+            ensureDefaultCategories();
+          }
+          if (res.targets) {
+            targets = res.targets;
+            localStorage.setItem('driver_targets_v1', JSON.stringify(targets));
+          }
+          if (remoteTs > localUpdatedAt) {
+            localUpdatedAt = remoteTs;
+            localStorage.setItem('driver_ledger_updated_at_v1', String(localUpdatedAt));
+          }
+          clearLocalDirty();
+          localStorage.setItem('driver_ledger_v1', JSON.stringify(transactions));
+          localStorage.setItem('driver_categories_v1', JSON.stringify(categories));
+          renderAll();
+          statusEl.textContent = '已同步';
         }
-        localStorage.setItem('driver_ledger_v1', JSON.stringify(transactions));
-        localStorage.setItem('driver_categories_v1', JSON.stringify(categories));
-        renderAll();
-        statusEl.textContent = '已同步';
       } else {
-        statusEl.textContent = '同步失敗';
+        statusEl.textContent = pendingCloudPush ? '待補傳' : '同步失敗';
         renderAll();
       }
     };
@@ -2439,13 +2535,17 @@
       if (isDone) return;
       isDone = true;
       clearTimeout(timeoutTimer);
-      statusEl.textContent = '離線運行';
+      statusEl.textContent = pendingCloudPush ? '待補傳' : '離線運行';
       renderAll();
     };
     document.body.appendChild(scriptEl);
   }
 
   function saveDataToCloud() {
+    if (!localUpdatedAt) {
+      localUpdatedAt = Date.now();
+      localStorage.setItem('driver_ledger_updated_at_v1', String(localUpdatedAt));
+    }
     localStorage.setItem('driver_ledger_v1', JSON.stringify(transactions));
     localStorage.setItem('driver_categories_v1', JSON.stringify(categories));
     localStorage.setItem('driver_targets_v1', JSON.stringify(targets));
@@ -2454,7 +2554,9 @@
 
     const payload = {
       action: 'save',
+      updatedAt: localUpdatedAt,
       data: {
+        updatedAt: localUpdatedAt,
         records: transactions,
         categories: categories,
         targets: targets
@@ -2468,13 +2570,14 @@
     .then(res => res.json())
     .then(res => {
       if (res.success) {
+        clearLocalDirty();
         statusEl.textContent = '已同步';
       } else {
-        statusEl.textContent = '儲存失敗';
+        statusEl.textContent = '待補傳';
       }
     })
     .catch(() => {
-      statusEl.textContent = '離線保存';
+      statusEl.textContent = '待補傳';
     });
   }
 
