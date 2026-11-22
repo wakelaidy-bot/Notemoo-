@@ -593,9 +593,10 @@
       max-width: 500px;
       margin: 0 auto;
       border-radius: 24px 24px 0 0;
-      padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
+      padding: 20px 20px calc(28px + env(safe-area-inset-bottom));
       max-height: 90vh;
       overflow-y: auto;
+      overscroll-behavior: contain;
       animation: slideUp 0.22s ease-out;
     }
     @keyframes slideUp {
@@ -757,7 +758,7 @@
       display: grid;
       grid-template-columns: 1fr 1.2fr;
       gap: 10px;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
     .meta-inputs input, .add-cat-row input, .add-cat-row select {
       background: #2C2C2E;
@@ -768,6 +769,7 @@
       font-size: 14px;
       outline: none;
       width: 100%;
+      scroll-margin-bottom: 120px;
     }
     .submit-btn {
       width: 100%;
@@ -779,6 +781,7 @@
       font-size: 16px;
       font-weight: 600;
       cursor: pointer;
+      display: block;
     }
 
     .add-cat-row {
