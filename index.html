@@ -80,11 +80,12 @@
       border-radius: 8px;
       font-size: 12px;
       font-weight: 500;
+      cursor: pointer;
     }
     .sync-status {
       font-size: 11px;
       color: var(--text-muted);
-      margin-right: 4px;
+      margin-right: 2px;
     }
     .container {
       padding: 16px 16px 0;
@@ -151,6 +152,7 @@
       font-size: 14px;
       font-weight: 600;
       transition: all 0.2s;
+      cursor: pointer;
     }
     .segment-btn.active {
       background: var(--card-elevated);
@@ -194,9 +196,7 @@
       border: 1px solid transparent;
       transition: background 0.15s;
     }
-    .cal-cell.other-month {
-      opacity: 0.32;
-    }
+    .cal-cell.other-month { opacity: 0.32; }
     .cal-cell.selected {
       background: rgba(10, 132, 255, 0.16);
       border-color: var(--accent);
@@ -212,9 +212,7 @@
       font-weight: 600;
       margin-bottom: 4px;
     }
-    .cal-cell.weekend .cal-day-num {
-      color: var(--weekend);
-    }
+    .cal-cell.weekend .cal-day-num { color: var(--weekend); }
     .cal-cell.today .cal-day-num {
       background: var(--accent);
       color: #fff;
@@ -267,10 +265,161 @@
     }
     .chart-wrapper {
       position: relative;
-      height: 200px;
+      height: 220px;
       width: 100%;
       margin-bottom: 16px;
     }
+    .doughnut-center-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      text-align: center;
+    }
+    .doughnut-center-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+    .doughnut-center-value {
+      font-size: 18px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .rank-card-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .rank-card {
+      background: var(--card-elevated);
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-left: 4px solid var(--accent);
+    }
+    .rank-card-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .rank-card-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .rank-card-amount {
+      font-size: 15px;
+      font-weight: 700;
+      margin-top: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+    .rank-card-right {
+      text-align: right;
+      flex-shrink: 0;
+      margin-left: 8px;
+    }
+    .rank-badge {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: block;
+    }
+    .rank-pct {
+      font-size: 13px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .platform-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+    }
+    .platform-table th {
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 11.5px;
+      padding: 8px 4px;
+      border-bottom: 0.5px solid var(--border);
+      text-align: right;
+    }
+    .platform-table th:first-child { text-align: left; }
+    .platform-table td {
+      padding: 10px 4px;
+      border-bottom: 0.5px solid var(--border);
+      text-align: right;
+    }
+    .platform-table td:first-child {
+      text-align: left;
+      font-weight: 600;
+    }
+    .platform-table tr:last-child td { border-bottom: none; }
+
+    .weekly-nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .weekly-range-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .weekly-total-amount {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--day-income);
+      margin-bottom: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+    .weekly-peak-note {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .weekly-days-row {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      text-align: center;
+      margin-top: 6px;
+      margin-bottom: 12px;
+    }
+    .weekly-day-pill {
+      background: var(--card-elevated);
+      border-radius: 8px;
+      padding: 5px 2px;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .weekly-day-pill.selected {
+      border-color: var(--accent);
+      background: rgba(10, 132, 255, 0.16);
+    }
+    .weekly-day-pill .d-num {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .weekly-day-pill .d-wk {
+      display: block;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    .weekly-day-pill.weekend .d-num,
+    .weekly-day-pill.weekend .d-wk {
+      color: var(--weekend);
+    }
+
     .stat-row {
       display: flex;
       justify-content: space-between;
@@ -313,9 +462,7 @@
       font-size: 19px;
       flex-shrink: 0;
     }
-    .tx-info {
-      min-width: 0;
-    }
+    .tx-info { min-width: 0; }
     .tx-info h4 {
       margin: 0 0 3px;
       font-size: 15px;
@@ -387,6 +534,7 @@
       font-weight: 600;
       box-shadow: 0 8px 24px rgba(10, 132, 255, 0.4);
       z-index: 20;
+      cursor: pointer;
     }
 
     .modal-backdrop {
@@ -433,6 +581,7 @@
       border-radius: 8px;
       font-size: 14px;
       font-weight: 600;
+      cursor: pointer;
     }
     .type-toggle button.active-exp { background: var(--expense); color: #000; }
     .type-toggle button.active-inc { background: var(--income); color: #fff; }
@@ -441,7 +590,7 @@
       background: #2C2C2E;
       border-radius: 14px;
       padding: 10px 16px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
     }
@@ -460,10 +609,26 @@
       font-weight: 700;
       outline: none;
     }
-
-    .calc-mode-box {
-      margin-bottom: 14px;
+    .quick-amount-bar {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      margin-bottom: 12px;
     }
+    .quick-amt-btn {
+      background: #2C2C2E;
+      border: 0.5px solid #3A3A3C;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .calc-mode-box { margin-bottom: 14px; }
     .calc-options {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -479,6 +644,7 @@
       font-size: 12px;
       font-weight: 600;
       text-align: center;
+      cursor: pointer;
     }
     .calc-btn.selected {
       border-color: var(--income);
@@ -539,6 +705,7 @@
       text-align: center;
       color: var(--text);
       font-size: 12px;
+      cursor: pointer;
     }
     .cat-chip.selected {
       border-color: var(--accent);
@@ -570,6 +737,7 @@
       padding: 15px;
       font-size: 16px;
       font-weight: 600;
+      cursor: pointer;
     }
 
     .add-cat-row {
@@ -585,6 +753,7 @@
       border-radius: 12px;
       font-size: 13px;
       font-weight: 600;
+      cursor: pointer;
     }
     .manage-cat-list {
       display: flex;
@@ -614,10 +783,9 @@
       height: 26px;
       border-radius: 6px;
       font-size: 12px;
+      cursor: pointer;
     }
-    .icon-action-btn.del {
-      color: var(--expense);
-    }
+    .icon-action-btn.del { color: var(--expense); }
     .manage-select {
       background: #3A3A3C;
       border: none;
@@ -639,6 +807,8 @@
   </div>
   <div class="header-actions">
     <span class="sync-status" id="syncStatus">連線中...</span>
+    <button class="header-btn" onclick="exportData('json')">JSON</button>
+    <button class="header-btn" onclick="exportData('csv')">CSV</button>
     <button class="header-btn" onclick="openCatModal()">分類</button>
     <button class="header-btn" onclick="syncWithCloud()">同步</button>
   </div>
@@ -719,9 +889,29 @@
       </div>
     </div>
 
+    <!-- 週區間總覽與週一～週日長條圖 -->
+    <div class="chart-card">
+      <div class="weekly-nav-bar">
+        <span style="font-size:14px; font-weight:600;">📅 週區間總覽（週一～週日）</span>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <button class="month-btn" style="width:24px; height:24px; font-size:12px;" onclick="changeWeek(-1)">‹</button>
+          <span class="weekly-range-label" id="weeklyRangeLabel">--</span>
+          <button class="month-btn" style="width:24px; height:24px; font-size:12px;" onclick="changeWeek(1)">›</button>
+        </div>
+      </div>
+      <div class="weekly-total-amount" id="weeklyTotalAmount">$0</div>
+      <div class="weekly-peak-note" id="weeklyPeakNote">本週單日最高：—</div>
+      <div class="chart-wrapper" style="height:175px; margin-bottom:8px;">
+        <canvas id="weeklyBarChart"></canvas>
+      </div>
+      <div class="weekly-days-row" id="weeklyDaysRow"></div>
+      <div id="weeklyBreakdownList"></div>
+    </div>
+
+    <!-- 圓環圖 + 排名卡片 + 單數/總金額/單均表 + 分類回金統計 -->
     <div class="chart-card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <span style="font-size:14px; font-weight:600;" id="chartTitle">收入圓餅圖與統計</span>
+        <span style="font-size:14px; font-weight:600;" id="chartTitle">收入圓環圖與統計</span>
         <button class="header-btn" onclick="toggleChartType()" id="chartToggleBtn">切換支出統計</button>
       </div>
       
@@ -732,8 +922,14 @@
 
       <div class="chart-wrapper">
         <canvas id="categoryChart"></canvas>
+        <div class="doughnut-center-overlay">
+          <span class="doughnut-center-label" id="doughnutCenterLabel">總收入</span>
+          <strong class="doughnut-center-value inc-color" id="doughnutCenterValue">$0</strong>
+        </div>
       </div>
-      <div id="categoryBreakdown" style="margin-top: 14px;"></div>
+
+      <div id="rankCardList" class="rank-card-list"></div>
+      <div id="categoryBreakdown" style="margin-top: 10px;"></div>
     </div>
   </div>
 </div>
@@ -748,7 +944,7 @@
         <button id="btnTypeInc" class="active-inc" onclick="setTxType('income')">收入</button>
         <button id="btnTypeExp" onclick="setTxType('expense')">支出</button>
       </div>
-      <button style="background:none; border:none; color:var(--text-muted); font-size:15px;" onclick="closeModal()">取消</button>
+      <button style="background:none; border:none; color:var(--text-muted); font-size:15px; cursor:pointer;" onclick="closeModal()">取消</button>
     </div>
 
     <div class="cat-grid" id="categoryGrid"></div>
@@ -756,6 +952,16 @@
     <div class="amount-input-box">
       <span>$</span>
       <input type="number" id="inputAmount" inputmode="decimal" placeholder="輸入總金額" oninput="updateCalcPreview()" />
+    </div>
+
+    <div class="quick-amount-bar">
+      <button type="button" class="quick-amt-btn" onclick="addQuickAmount(100)">+$100</button>
+      <button type="button" class="quick-amt-btn" onclick="addQuickAmount(150)">+$150</button>
+      <button type="button" class="quick-amt-btn" onclick="addQuickAmount(200)">+$200</button>
+      <button type="button" class="quick-amt-btn" onclick="addQuickAmount(300)">+$300</button>
+      <button type="button" class="quick-amt-btn" onclick="addQuickAmount(500)">+$500</button>
+      <button type="button" class="quick-amt-btn" onclick="addQuickAmount(1000)">+$1,000</button>
+      <button type="button" class="quick-amt-btn" onclick="clearAmount()">清除</button>
     </div>
 
     <div class="calc-mode-box" id="calcModeBox">
@@ -810,7 +1016,7 @@
         <button id="catManageInc" class="active-inc" onclick="setManageCatType('income')">收入分類</button>
         <button id="catManageExp" onclick="setManageCatType('expense')">支出分類</button>
       </div>
-      <button style="background:none; border:none; color:var(--accent); font-size:15px; font-weight:600;" onclick="closeCatModal()">完成</button>
+      <button style="background:none; border:none; color:var(--accent); font-size:15px; font-weight:600; cursor:pointer;" onclick="closeCatModal()">完成</button>
     </div>
 
     <div class="add-cat-row" id="addCatRowContainer">
@@ -886,6 +1092,7 @@
   let currentYear = new Date().getFullYear();
   let currentMonth = new Date().getMonth();
   let selectedDateStr = formatDateYMD(new Date());
+  let weekAnchorDate = parseDateYMD(selectedDateStr);
   let viewMode = 'month';
   let expenseViewMode = 'all';
 
@@ -896,6 +1103,12 @@
   let manageCatType = 'income';
   let chartMode = 'income';
   let chartInstance = null;
+  let weeklyChartInstance = null;
+
+  function parseDateYMD(str) {
+    const parts = String(str).split('-');
+    return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+  }
 
   function getPaletteForType(type) {
     return type === 'expense' ? EXPENSE_PALETTE : INCOME_PALETTE;
@@ -1029,8 +1242,14 @@
     renderAll();
   }
 
+  function changeWeek(deltaWeeks) {
+    weekAnchorDate = new Date(weekAnchorDate.getFullYear(), weekAnchorDate.getMonth(), weekAnchorDate.getDate() + deltaWeeks * 7);
+    renderWeeklyOverview();
+  }
+
   function selectDate(dateStr) {
     selectedDateStr = dateStr;
+    weekAnchorDate = parseDateYMD(dateStr);
     const parts = dateStr.split('-');
     const y = parseInt(parts[0], 10);
     const m = parseInt(parts[1], 10) - 1;
@@ -1119,7 +1338,143 @@
 
     renderCalendar();
     renderSelectedDayView();
+    renderWeeklyOverview();
     renderChart(periodList);
+  }
+
+  function renderWeeklyOverview() {
+    const mondayOffset = (weekAnchorDate.getDay() + 6) % 7;
+    const weekStart = new Date(weekAnchorDate.getFullYear(), weekAnchorDate.getMonth(), weekAnchorDate.getDate() - mondayOffset);
+    const weekEnd = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 6);
+
+    document.getElementById('weeklyRangeLabel').textContent =
+      `${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()}`;
+
+    const weekdayNames = ['一', '二', '三', '四', '五', '六', '日'];
+    const dayLabels = [];
+    const dayAmounts = [];
+    const dayMeta = [];
+
+    let weekTotalInc = 0;
+    let weekTipTotal = 0;
+    let weekDeductTotal = 0;
+    let peakVal = -1;
+    let peakLabel = '—';
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i);
+      const dStr = formatDateYMD(d);
+      const dayTxs = transactions.filter(t => t.date === dStr);
+
+      let inc = 0;
+      dayTxs.forEach(t => {
+        if (t.type === 'income') {
+          inc += t.amount;
+          weekTotalInc += t.amount;
+          weekTipTotal += getTxTipAmount(t);
+          weekDeductTotal += (t.deduction || 0);
+        } else if (isFixedDeductExpense(t) || isOtherDeductExpense(t)) {
+          weekDeductTotal += t.amount;
+        }
+      });
+
+      const labelText = `${d.getMonth() + 1}/${d.getDate()}(${weekdayNames[i]})`;
+      dayLabels.push(labelText);
+      dayAmounts.push(inc);
+      dayMeta.push({
+        dateStr: dStr,
+        dayNum: d.getDate(),
+        wk: weekdayNames[i],
+        isWeekend: i >= 5,
+        inc
+      });
+
+      if (inc > peakVal) {
+        peakVal = inc;
+        peakLabel = `${labelText} $${inc.toLocaleString()}`;
+      }
+    }
+
+    const weekNetIncome = Math.max(0, weekTotalInc - weekTipTotal);
+
+    document.getElementById('weeklyTotalAmount').textContent = `$${weekTotalInc.toLocaleString()}`;
+    document.getElementById('weeklyPeakNote').textContent = `本週單日最高：${peakVal > 0 ? peakLabel : '尚無收入'}`;
+
+    document.getElementById('weeklyDaysRow').innerHTML = dayMeta.map(m => `
+      <div class="weekly-day-pill ${m.dateStr === selectedDateStr ? 'selected' : ''} ${m.isWeekend ? 'weekend' : ''}"
+           onclick="selectDate('${m.dateStr}')">
+        <span class="d-num">${m.dayNum}</span>
+        <span class="d-wk">週${m.wk}</span>
+      </div>
+    `).join('');
+
+    document.getElementById('weeklyBreakdownList').innerHTML = `
+      <div class="stat-row">
+        <span>淨收入（不含小費）</span>
+        <strong style="font-variant-numeric: tabular-nums;">$${weekNetIncome.toLocaleString()}</strong>
+      </div>
+      <div class="stat-row">
+        <span>小費總額</span>
+        <strong class="tip-color" style="font-variant-numeric: tabular-nums;">$${weekTipTotal.toLocaleString()}</strong>
+      </div>
+      <div class="stat-row">
+        <span>回金總額</span>
+        <strong class="deduct-color" style="font-variant-numeric: tabular-nums;">$${weekDeductTotal.toLocaleString()}</strong>
+      </div>
+      <div class="stat-row">
+        <span>本週總收入</span>
+        <strong class="day-inc-color" style="font-variant-numeric: tabular-nums;">$${weekTotalInc.toLocaleString()}</strong>
+      </div>
+    `;
+
+    const ctx = document.getElementById('weeklyBarChart').getContext('2d');
+    if (weeklyChartInstance) weeklyChartInstance.destroy();
+    weeklyChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: dayLabels,
+        datasets: [{
+          label: '當日收入',
+          data: dayAmounts,
+          backgroundColor: dayMeta.map(m => m.dateStr === selectedDateStr ? '#0A84FF' : '#64D2FF'),
+          borderRadius: 6,
+          maxBarThickness: 28
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        onClick: (_, elements) => {
+          if (elements && elements.length > 0) {
+            const idx = elements[0].index;
+            if (dayMeta[idx]) selectDate(dayMeta[idx].dateStr);
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (context) => `收入：$${Number(context.raw || 0).toLocaleString()}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#8E8E93', font: { size: 10 } },
+            grid: { display: false }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              color: '#8E8E93',
+              font: { size: 10 },
+              callback: (v) => '$' + v
+            },
+            grid: { color: 'rgba(142, 142, 147, 0.14)' }
+          }
+        }
+      }
+    });
   }
 
   function renderCalendar() {
@@ -1289,7 +1644,7 @@
         return;
       }
       if (totals[cat.id]) {
-        const pct = grandTotal > 0 ? ((totals[cat.id] / grandTotal) * 100).toFixed(1) : 0;
+        const pct = grandTotal > 0 ? ((totals[cat.id] / grandTotal) * 100).toFixed(1) : '0.0';
         const count = counts[cat.id] || 0;
         const itemColor = getDistinctColor(chartMode, idx, usedColors);
         cat.color = itemColor;
@@ -1298,6 +1653,7 @@
           amount: totals[cat.id],
           pct,
           count,
+          avg: count > 0 ? Math.round(totals[cat.id] / count) : 0,
           color: itemColor
         });
         delete totals[cat.id];
@@ -1306,7 +1662,7 @@
     });
 
     Object.keys(totals).forEach((unknownId, idx) => {
-      const pct = grandTotal > 0 ? ((totals[unknownId] / grandTotal) * 100).toFixed(1) : 0;
+      const pct = grandTotal > 0 ? ((totals[unknownId] / grandTotal) * 100).toFixed(1) : '0.0';
       const count = counts[unknownId] || 0;
       const fallbackColor = getDistinctColor(chartMode, catList.length + idx, usedColors);
       rawItems.push({
@@ -1315,11 +1671,49 @@
         amount: totals[unknownId],
         pct,
         count,
+        avg: count > 0 ? Math.round(totals[unknownId] / count) : 0,
         color: fallbackColor
       });
     });
 
     rawItems.sort((a, b) => b.amount - a.amount);
+
+    const centerLabelEl = document.getElementById('doughnutCenterLabel');
+    const centerValEl = document.getElementById('doughnutCenterValue');
+    if (chartMode === 'income') {
+      centerLabelEl.textContent = '總收入';
+      centerValEl.textContent = `$${grandTotal.toLocaleString()}`;
+      centerValEl.className = 'doughnut-center-value inc-color';
+    } else {
+      centerLabelEl.textContent = expenseViewMode === 'op' ? '純營運成本' : '總支出';
+      centerValEl.textContent = `$${grandTotal.toLocaleString()}`;
+      centerValEl.className = 'doughnut-center-value exp-color';
+    }
+
+    const rankListEl = document.getElementById('rankCardList');
+    if (rawItems.length === 0) {
+      rankListEl.innerHTML = '';
+    } else {
+      const topLabel = chartMode === 'income' ? '最高來源' : '最大支出';
+      rankListEl.innerHTML = rawItems.slice(0, 5).map((item, idx) => {
+        const rankText = idx === 0 ? topLabel : `第 ${idx + 1} 名`;
+        return `
+          <div class="rank-card" style="border-left-color:${item.color};">
+            <div class="rank-card-left">
+              <span style="font-size:20px;">${item.icon}</span>
+              <div>
+                <div class="rank-card-title">${escapeHTML(item.name)}</div>
+                <div class="rank-card-amount">$${item.amount.toLocaleString()}</div>
+              </div>
+            </div>
+            <div class="rank-card-right">
+              <span class="rank-badge">${rankText}</span>
+              <span class="rank-pct" style="color:${item.color};">${item.pct}%</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
 
     const labels = rawItems.map(item => item.name);
     const data = rawItems.map(item => item.amount);
@@ -1328,24 +1722,41 @@
     const breakdownEl = document.getElementById('categoryBreakdown');
     let htmlContent = '';
     const periodNameStr = viewMode === 'month' ? '本月' : '年度';
+    const amountColTitle = chartMode === 'income' ? '總收入' : '總金額';
 
     if (rawItems.length === 0) {
       htmlContent = `<div class="empty-state" style="padding:20px; border:none;">${periodNameStr}無${chartMode === 'expense' ? (expenseViewMode==='op'?'純營運成本':'支出') : '收入'}數據</div>`;
     } else {
-      const rowsHtml = rawItems.map(item => `
-        <div class="stat-row">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span style="width:10px; height:10px; border-radius:50%; background:${item.color}; display:inline-block; flex-shrink:0;"></span>
-            <span>${item.icon} ${escapeHTML(item.name)} <span style="color:var(--text-muted); font-size:12px;">(${item.pct}% · ${item.count}筆)</span></span>
-          </div>
-          <strong style="font-variant-numeric: tabular-nums;">$${item.amount.toLocaleString()}</strong>
-        </div>
+      const tableRows = rawItems.map(item => `
+        <tr>
+          <td>
+            <span style="width:8px; height:8px; border-radius:50%; background:${item.color}; display:inline-block; margin-right:6px;"></span>
+            ${item.icon} ${escapeHTML(item.name)}
+          </td>
+          <td>${item.count}</td>
+          <td>$${item.amount.toLocaleString()}</td>
+          <td>$${item.avg.toLocaleString()}</td>
+        </tr>
       `).join('');
 
-      htmlContent = rowsHtml;
+      htmlContent = `
+        <div style="font-size:13px; font-weight:700; margin-bottom:8px; color:var(--text-muted);">📋 ${chartMode === 'income' ? '平台／分類統計' : '支出項目明細'}</div>
+        <table class="platform-table">
+          <thead>
+            <tr>
+              <th>項目</th>
+              <th>單數</th>
+              <th>${amountColTitle}</th>
+              <th>單均</th>
+            </tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      `;
+
       if (chartMode === 'income') {
         htmlContent += `
-          <div style="margin-top:12px; padding-top:10px; border-top: 0.5px solid var(--border); text-align:right; font-size:13px; color:var(--text-muted);">
+          <div style="margin-top:10px; padding-top:8px; border-top: 0.5px solid var(--border); text-align:right; font-size:12px; color:var(--text-muted);">
             ${periodNameStr}收入總筆數：<strong>${totalCount}</strong> 筆
           </div>
         `;
@@ -1422,10 +1833,19 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '68%',
+        cutout: '70%',
         plugins: {
           legend: { display: false },
-          tooltip: { enabled: data.length > 0 }
+          tooltip: {
+            enabled: data.length > 0,
+            callbacks: {
+              label: (context) => {
+                const val = Number(context.raw || 0);
+                const pct = grandTotal > 0 ? ((val / grandTotal) * 100).toFixed(1) : '0.0';
+                return ` $${val.toLocaleString()} (${pct}%)`;
+              }
+            }
+          }
         }
       }
     });
@@ -1436,14 +1856,29 @@
     document.getElementById('tabChart').classList.toggle('active', tab === 'chart');
     document.getElementById('calendarView').style.display = tab === 'calendar' ? 'block' : 'none';
     document.getElementById('chartView').style.display = tab === 'chart' ? 'block' : 'none';
-    if (tab === 'chart') renderChart(getFilteredTransactions());
+    if (tab === 'chart') {
+      renderWeeklyOverview();
+      renderChart(getFilteredTransactions());
+    }
   }
 
   function toggleChartType() {
     chartMode = chartMode === 'expense' ? 'income' : 'expense';
-    document.getElementById('chartTitle').textContent = chartMode === 'expense' ? '支出圓餅圖與統計' : '收入圓餅圖與統計';
+    document.getElementById('chartTitle').textContent = chartMode === 'expense' ? '支出圓環圖與統計' : '收入圓環圖與統計';
     document.getElementById('chartToggleBtn').textContent = chartMode === 'expense' ? '切換收入統計' : '切換支出統計';
     renderChart(getFilteredTransactions());
+  }
+
+  function addQuickAmount(addVal) {
+    const input = document.getElementById('inputAmount');
+    const cur = parseFloat(input.value) || 0;
+    input.value = cur + addVal;
+    updateCalcPreview();
+  }
+
+  function clearAmount() {
+    document.getElementById('inputAmount').value = '';
+    updateCalcPreview();
   }
 
   function getActiveFixedReturn() {
@@ -1667,6 +2102,7 @@
     }
 
     selectedDateStr = date;
+    weekAnchorDate = parseDateYMD(date);
     const dateParts = date.split('-');
     currentYear = parseInt(dateParts[0], 10);
     currentMonth = parseInt(dateParts[1], 10) - 1;
@@ -1682,6 +2118,48 @@
     transactions = transactions.filter(t => t.id !== id);
     saveDataToCloud();
     renderAll();
+  }
+
+  function exportData(type) {
+    const filename = `運轉帳本_${formatDateYMD(new Date())}.${type}`;
+    let content = '';
+    let mime = 'text/plain;charset=utf-8';
+
+    if (type === 'json') {
+      content = JSON.stringify({
+        exportedAt: new Date().toISOString(),
+        records: transactions,
+        categories,
+        targets
+      }, null, 2);
+      mime = 'application/json;charset=utf-8';
+    } else {
+      const headers = ['日期', '類型', '分類', '金額', '回金', '小費', '備註'];
+      const rows = transactions.map(t => {
+        const cat = findCategoryInfo(t.type, t.category);
+        return [
+          t.date || '',
+          t.type === 'income' ? '收入' : '支出',
+          cat.name || '',
+          t.amount || 0,
+          t.deduction || 0,
+          getTxTipAmount(t),
+          (t.note || '').replace(/"/g, '""')
+        ].map(v => `"${v}"`).join(',');
+      });
+      content = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+      mime = 'text/csv;charset=utf-8';
+    }
+
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   function openCatModal() {
