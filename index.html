@@ -513,6 +513,9 @@
       margin: 0;
       font-size: 12px;
       color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .tx-right {
       text-align: right;
@@ -1003,6 +1006,7 @@
     </div>
 
     <div class="quick-amount-bar">
+      <button type="button" class="quick-amt-btn" onclick="addQuickAmount(10)">+$10</button>
       <button type="button" class="quick-amt-btn" onclick="addQuickAmount(100)">+$100</button>
       <button type="button" class="quick-amt-btn" onclick="addQuickAmount(150)">+$150</button>
       <button type="button" class="quick-amt-btn" onclick="addQuickAmount(200)">+$200</button>
@@ -1223,6 +1227,32 @@
       if (match) return parseFloat(match[1]) || 0;
     }
     return 0;
+  }
+
+  function extractCleanNote(tx) {
+    if (!tx.note) return '';
+    return String(tx.note)
+      .replace(/(固定回金\$\d+\(原\$\d+(?:\.\d+)?\)|固定\$\d+\+百回\$\d+\(原\$\d+(?:\.\d+)?,回\$\d+(?:\.\d+)?\))/g, '')
+      .replace(/\[含小費\$\d+(?:\.\d+)?\]/g, '')
+      .replace(/^\s*·\s*|\s*·\s*$/g, '')
+      .trim();
+  }
+
+  function formatTxSubtitle(tx) {
+    const cleanNote = extractCleanNote(tx);
+    if (cleanNote) return cleanNote;
+    if (tx.type === 'income') {
+      const tip = getTxTipAmount(tx);
+      const parts = [];
+      if (tx.rawAmount && tx.rawAmount !== tx.amount) {
+        parts.push(`原 $${Number(tx.rawAmount).toLocaleString()}`);
+      }
+      if (tip > 0) {
+        parts.push(`小費 +$${tip.toLocaleString()}`);
+      }
+      if (parts.length > 0) return parts.join(' · ');
+    }
+    return tx.date || '';
   }
 
   function isOtherDeductExpense(tx) {
@@ -1618,6 +1648,7 @@
       const deductBadge = (t.type === 'income' && t.deduction > 0)
         ? `<span class="tx-deduct-sub">回金: $${t.deduction.toLocaleString()}</span>`
         : '';
+      const subtitle = formatTxSubtitle(t);
 
       return `
         <div class="tx-item">
@@ -1625,7 +1656,7 @@
             <div class="tx-icon">${cat.icon}</div>
             <div class="tx-info">
               <h4>${escapeHTML(cat.name)}</h4>
-              <p>${t.note ? escapeHTML(t.note) : t.date}</p>
+              <p>${escapeHTML(subtitle)}</p>
             </div>
           </div>
           <div class="tx-right">
@@ -2030,7 +2061,7 @@
     let restoredRaw = tx.rawAmount;
     let restoredMode = tx.calcMode;
     let restoredFixed = tx.fixedReturn;
-    let cleanNote = tx.note || '';
+    let cleanNote = extractCleanNote(tx);
 
     if (restoredRaw === undefined) {
       restoredRaw = tx.type === 'income' ? (tx.amount + (tx.deduction || 0) - restoredTip) : tx.amount;
@@ -2108,7 +2139,7 @@
   function saveTransaction() {
     const rawAmount = parseFloat(document.getElementById('inputAmount').value);
     const date = document.getElementById('inputDate').value;
-    const rawNote = document.getElementById('inputNote').value.trim();
+    const cleanNote = document.getElementById('inputNote').value.trim();
 
     if (!rawAmount || rawAmount <= 0) {
       alert('請輸入有效金額');
@@ -2121,7 +2152,6 @@
 
     let finalAmount = rawAmount;
     let deduction = 0;
-    let note = rawNote;
     let fixedRet = 20;
     let tipFee = 0;
 
@@ -2131,15 +2161,6 @@
       finalAmount = res.final;
       deduction = res.deduction;
       fixedRet = getActiveFixedReturn();
-
-      let modeTag = currentCalcMode === 'opt1' ? `固定回金$${res.fixedPart}(原$${rawAmount})` :
-                      currentCalcMode === 'opt2' ? `固定$${res.fixedPart}+百回$${res.percentPart}(原$${rawAmount},回$${deduction})` : '';
-      if (tipFee > 0) {
-        modeTag += `[含小費$${tipFee}]`;
-      }
-      if (modeTag) {
-        note = rawNote ? `${modeTag} · ${rawNote}` : modeTag;
-      }
     }
 
     const txRecord = {
@@ -2153,7 +2174,7 @@
       calcMode: currentTxType === 'income' ? currentCalcMode : null,
       fixedReturn: currentTxType === 'income' ? fixedRet : null,
       date,
-      note
+      note: cleanNote
     };
 
     if (editingTxId) {
@@ -2208,7 +2229,7 @@
           t.amount || 0,
           t.deduction || 0,
           getTxTipAmount(t),
-          (t.note || '').replace(/"/g, '""')
+          extractCleanNote(t).replace(/"/g, '""')
         ].map(v => `"${v}"`).join(',');
       });
       content = '\uFEFF' + [headers.join(','), ...rows].join('\n');
