@@ -53,7 +53,7 @@
     .month-selector {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       font-size: 16px;
       font-weight: 600;
     }
@@ -69,23 +69,24 @@
     }
     .header-actions {
       display: flex;
-      gap: 6px;
+      gap: 8px;
       align-items: center;
     }
     .header-btn {
       background: var(--card-elevated);
       border: 0.5px solid var(--border);
       color: var(--text);
-      padding: 6px 10px;
+      padding: 6px 11px;
       border-radius: 8px;
       font-size: 12px;
       font-weight: 500;
       cursor: pointer;
+      white-space: nowrap;
     }
     .sync-status {
       font-size: 11px;
       color: var(--text-muted);
-      margin-right: 2px;
+      white-space: nowrap;
     }
     .container {
       padding: 16px 16px 0;
@@ -367,12 +368,31 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 8px;
       margin-bottom: 8px;
+    }
+    .weekly-jump-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .weekly-date-jump {
+      background: var(--card-elevated);
+      border: 0.5px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 5px 8px;
+      font-size: 12px;
+      outline: none;
+      flex: 1;
     }
     .weekly-range-label {
       font-size: 13px;
       font-weight: 600;
       color: var(--text);
+      white-space: nowrap;
     }
     .weekly-total-amount {
       font-size: 26px;
@@ -429,6 +449,24 @@
       font-size: 14px;
     }
     .stat-row:last-child { border-bottom: none; }
+
+    .backup-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 0.5px solid var(--border);
+    }
+    .backup-title {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .backup-btns {
+      display: flex;
+      gap: 6px;
+    }
 
     .tx-list {
       display: flex;
@@ -807,8 +845,6 @@
   </div>
   <div class="header-actions">
     <span class="sync-status" id="syncStatus">連線中...</span>
-    <button class="header-btn" onclick="exportData('json')">JSON</button>
-    <button class="header-btn" onclick="exportData('csv')">CSV</button>
     <button class="header-btn" onclick="openCatModal()">分類</button>
     <button class="header-btn" onclick="syncWithCloud()">同步</button>
   </div>
@@ -899,6 +935,10 @@
           <button class="month-btn" style="width:24px; height:24px; font-size:12px;" onclick="changeWeek(1)">›</button>
         </div>
       </div>
+      <div class="weekly-jump-row">
+        <input type="date" class="weekly-date-jump" id="weeklyJumpInput" onchange="jumpToWeekByDate(this.value)" title="直接選擇日期跳轉到該週" />
+        <button class="header-btn" onclick="jumpToCurrentWeek()">回到本週</button>
+      </div>
       <div class="weekly-total-amount" id="weeklyTotalAmount">$0</div>
       <div class="weekly-peak-note" id="weeklyPeakNote">本週單日最高：—</div>
       <div class="chart-wrapper" style="height:175px; margin-bottom:8px;">
@@ -930,6 +970,14 @@
 
       <div id="rankCardList" class="rank-card-list"></div>
       <div id="categoryBreakdown" style="margin-top: 10px;"></div>
+
+      <div class="backup-bar">
+        <span class="backup-title">本地備份 / 試算表對帳</span>
+        <div class="backup-btns">
+          <button class="header-btn" onclick="exportData('json')">匯出 JSON</button>
+          <button class="header-btn" onclick="exportData('csv')">匯出 CSV</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1247,6 +1295,17 @@
     renderWeeklyOverview();
   }
 
+  function jumpToWeekByDate(dateStr) {
+    if (!dateStr) return;
+    weekAnchorDate = parseDateYMD(dateStr);
+    renderWeeklyOverview();
+  }
+
+  function jumpToCurrentWeek() {
+    weekAnchorDate = new Date();
+    renderWeeklyOverview();
+  }
+
   function selectDate(dateStr) {
     selectedDateStr = dateStr;
     weekAnchorDate = parseDateYMD(dateStr);
@@ -1349,6 +1408,11 @@
 
     document.getElementById('weeklyRangeLabel').textContent =
       `${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()}`;
+
+    const jumpInput = document.getElementById('weeklyJumpInput');
+    if (jumpInput) {
+      jumpInput.value = formatDateYMD(weekAnchorDate);
+    }
 
     const weekdayNames = ['一', '二', '三', '四', '五', '六', '日'];
     const dayLabels = [];
