@@ -641,9 +641,10 @@
       max-width: 500px;
       margin: 0 auto;
       border-radius: 24px 24px 0 0;
-      padding: 20px 20px calc(28px + env(safe-area-inset-bottom));
-      max-height: 90vh;
+      padding: 14px 18px calc(24px + env(safe-area-inset-bottom));
+      max-height: 92vh;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
       touch-action: pan-y;
       animation: slideUp 0.22s ease-out;
@@ -656,7 +657,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 14px;
+      margin-bottom: 10px;
     }
     .type-toggle {
       display: flex;
@@ -679,14 +680,14 @@
 
     .amount-input-box {
       background: #2C2C2E;
-      border-radius: 14px;
-      padding: 10px 16px;
-      margin-bottom: 8px;
+      border-radius: 12px;
+      padding: 8px 14px;
+      margin-bottom: 6px;
       display: flex;
       align-items: center;
     }
     .amount-input-box span {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 700;
       color: var(--text-muted);
       margin-right: 8px;
@@ -696,7 +697,7 @@
       background: transparent;
       border: none;
       color: var(--text);
-      font-size: 28px;
+      font-size: 24px;
       font-weight: 700;
       outline: none;
     }
@@ -704,8 +705,8 @@
       display: flex;
       gap: 6px;
       overflow-x: auto;
-      padding-bottom: 4px;
-      margin-bottom: 12px;
+      padding-bottom: 2px;
+      margin-bottom: 8px;
       touch-action: pan-x;
     }
     .quick-amt-btn {
@@ -720,19 +721,19 @@
       cursor: pointer;
     }
 
-    .calc-mode-box { margin-bottom: 14px; }
+    .calc-mode-box { margin-bottom: 10px; }
     .calc-options {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-bottom: 8px;
+      gap: 6px;
+      margin-bottom: 6px;
     }
     .calc-btn {
       background: #2C2C2E;
       border: 1.5px solid transparent;
       color: var(--text);
-      padding: 9px 4px;
-      border-radius: 10px;
+      padding: 7px 4px;
+      border-radius: 9px;
       font-size: 12px;
       font-weight: 600;
       text-align: center;
@@ -747,7 +748,7 @@
       font-size: 12px;
       color: var(--income);
       background: rgba(255, 69, 58, 0.08);
-      padding: 8px 12px;
+      padding: 7px 10px;
       border-radius: 8px;
       display: flex;
       justify-content: space-between;
@@ -758,25 +759,25 @@
     .fixed-return-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 10px;
+      gap: 6px;
+      margin-bottom: 8px;
     }
     .fixed-return-adjust {
       display: flex;
       align-items: center;
       justify-content: space-between;
       background: #2C2C2E;
-      padding: 8px 12px;
-      border-radius: 10px;
-      font-size: 13px;
+      padding: 6px 10px;
+      border-radius: 9px;
+      font-size: 12px;
     }
     .fixed-return-adjust select {
       background: #3A3A3C;
       border: none;
       color: var(--text);
-      padding: 6px 10px;
-      border-radius: 8px;
-      font-size: 13px;
+      padding: 5px 8px;
+      border-radius: 7px;
+      font-size: 12px;
       font-weight: 700;
       outline: none;
     }
@@ -784,16 +785,16 @@
     .cat-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      margin-bottom: 14px;
-      max-height: 175px;
+      gap: 6px;
+      margin-bottom: 10px;
+      max-height: 132px;
       overflow-y: auto;
     }
     .cat-chip {
       background: #2C2C2E;
       border: 1.5px solid transparent;
-      border-radius: 12px;
-      padding: 10px 4px;
+      border-radius: 10px;
+      padding: 7px 4px;
       text-align: center;
       color: var(--text);
       font-size: 12px;
@@ -803,35 +804,36 @@
       border-color: var(--accent);
       background: rgba(10, 132, 255, 0.15);
     }
-    .cat-chip div { font-size: 18px; margin-bottom: 4px; }
+    .cat-chip div { font-size: 16px; margin-bottom: 2px; }
     .meta-inputs {
       display: grid;
       grid-template-columns: 1fr 1.2fr;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 8px;
+      margin-bottom: 12px;
     }
     .meta-inputs input, .add-cat-row input, .add-cat-row select {
       background: #2C2C2E;
       border: none;
-      border-radius: 12px;
-      padding: 12px;
+      border-radius: 10px;
+      padding: 10px 12px;
       color: var(--text);
       font-size: 14px;
       outline: none;
       width: 100%;
-      scroll-margin-bottom: 120px;
+      scroll-margin-bottom: 140px;
     }
     .submit-btn {
       width: 100%;
       background: var(--accent);
       color: #fff;
       border: none;
-      border-radius: 14px;
-      padding: 15px;
+      border-radius: 12px;
+      padding: 13px;
       font-size: 16px;
       font-weight: 600;
       cursor: pointer;
       display: block;
+      scroll-margin-bottom: 20px;
     }
 
     .add-cat-row {
@@ -937,7 +939,7 @@
         </div>
       </div>
       <div class="day-count-meta">
-        <span id="daySelectedDateLabel">日期：--</span>
+        <span id="daySelectedDateLabel">明細日期：--</span>
         <span id="dayOrderCountText">當日單數: 0 筆</span>
       </div>
     </div>
@@ -1061,7 +1063,10 @@
         <button id="btnTypeInc" class="active-inc" onclick="setTxType('income')">收入</button>
         <button id="btnTypeExp" onclick="setTxType('expense')">支出</button>
       </div>
-      <button style="background:none; border:none; color:var(--text-muted); font-size:15px; cursor:pointer;" onclick="closeModal()">取消</button>
+      <div style="display:flex; align-items:center; gap:14px;">
+        <button type="button" style="background:none; border:none; color:var(--text-muted); font-size:15px; cursor:pointer;" onclick="closeModal()">取消</button>
+        <button type="button" style="background:none; border:none; color:var(--accent); font-size:15px; font-weight:700; cursor:pointer;" onclick="saveTransaction()">儲存</button>
+      </div>
     </div>
 
     <div class="cat-grid" id="categoryGrid"></div>
@@ -1359,12 +1364,25 @@
     return `${y}-${m}-${d}`;
   }
 
+  function scrollSheetToSubmit() {
+    const sheet = document.getElementById('txBottomSheet');
+    if (!sheet) return;
+    setTimeout(() => {
+      sheet.scrollTop = sheet.scrollHeight;
+    }, 260);
+  }
+
   function init() {
     ensureDefaultCategories();
     initTipSelect();
     updatePeriodLabel();
     renderAll();
     syncWithCloud();
+
+    const amtInput = document.getElementById('inputAmount');
+    const noteInput = document.getElementById('inputNote');
+    if (amtInput) amtInput.addEventListener('focus', scrollSheetToSubmit);
+    if (noteInput) noteInput.addEventListener('focus', scrollSheetToSubmit);
   }
 
   function updatePeriodLabel() {
@@ -2381,12 +2399,17 @@
         }
 
         if (transactions.length > 0 && transactions[0].date) {
-          selectedDateStr = transactions[0].date;
-          weekAnchorDate = parseDateYMD(selectedDateStr);
-          const p = selectedDateStr.split('-');
-          if (p.length >= 2) {
-            currentYear = parseInt(p[0], 10) || currentYear;
-            currentMonth = (parseInt(p[1], 10) - 1) || 0;
+          const candidateDate = String(transactions[0].date);
+          if (/^\d{4}-\d{2}-\d{2}$/.test(candidateDate)) {
+            selectedDateStr = candidateDate;
+            weekAnchorDate = parseDateYMD(selectedDateStr);
+            const p = selectedDateStr.split('-');
+            const parsedYear = parseInt(p[0], 10);
+            const parsedMonthIdx = parseInt(p[1], 10) - 1;
+            if (Number.isFinite(parsedYear)) currentYear = parsedYear;
+            if (Number.isFinite(parsedMonthIdx) && parsedMonthIdx >= 0 && parsedMonthIdx <= 11) {
+              currentMonth = parsedMonthIdx;
+            }
             updatePeriodLabel();
           }
         }
