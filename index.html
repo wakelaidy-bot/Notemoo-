@@ -90,6 +90,7 @@
       font-size: 11px;
       color: var(--text-muted);
       white-space: nowrap;
+      font-variant-numeric: tabular-nums;
     }
     .container {
       padding: 16px 16px 0;
@@ -300,6 +301,22 @@
       font-size: 11.5px;
       color: var(--text-muted);
       font-variant-numeric: tabular-nums;
+      gap: 8px;
+    }
+    .day-meta-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mini-copy-btn {
+      background: var(--card-elevated);
+      border: 0.5px solid var(--border);
+      color: var(--text);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
     }
 
     .chart-card {
@@ -350,6 +367,11 @@
       justify-content: space-between;
       align-items: center;
       border-left: 4px solid var(--accent);
+      cursor: pointer;
+    }
+    .rank-card.active-filter {
+      outline: 1.5px solid var(--accent);
+      background: rgba(10, 132, 255, 0.14);
     }
     .rank-card-left {
       display: flex;
@@ -407,7 +429,43 @@
       text-align: left;
       font-weight: 600;
     }
+    .platform-table tr.clickable-row {
+      cursor: pointer;
+    }
+    .platform-table tr.active-row td {
+      background: rgba(10, 132, 255, 0.14);
+      color: var(--text);
+    }
     .platform-table tr:last-child td { border-bottom: none; }
+
+    .cat-drilldown-box {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 0.5px solid var(--border);
+    }
+    .cat-drilldown-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 12.5px;
+      font-weight: 600;
+    }
+    .cat-drilldown-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .cat-drilldown-item {
+      background: var(--card-elevated);
+      border-radius: 10px;
+      padding: 9px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12.5px;
+      gap: 8px;
+    }
 
     .weekly-nav-bar {
       display: flex;
@@ -822,6 +880,22 @@
       width: 100%;
       scroll-margin-bottom: 140px;
     }
+    .sheet-footer-actions {
+      display: grid;
+      grid-template-columns: 76px 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+    .cancel-sheet-btn {
+      background: #2C2C2E;
+      color: var(--text-muted);
+      border: none;
+      border-radius: 12px;
+      padding: 13px 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
     .submit-btn {
       width: 100%;
       background: var(--accent);
@@ -940,7 +1014,10 @@
       </div>
       <div class="day-count-meta">
         <span id="daySelectedDateLabel">明細日期：--</span>
-        <span id="dayOrderCountText">當日單數: 0 筆</span>
+        <div class="day-meta-right">
+          <span id="dayOrderCountText">當日單數: 0 筆</span>
+          <button type="button" class="mini-copy-btn" id="copyDaySummaryBtn" onclick="copyDaySummary()">複製摘要</button>
+        </div>
       </div>
     </div>
 
@@ -1039,6 +1116,7 @@
 
       <div id="rankCardList" class="rank-card-list"></div>
       <div id="categoryBreakdown" style="margin-top: 10px;"></div>
+      <div id="categoryDrilldown"></div>
 
       <div class="backup-bar">
         <span class="backup-title">本地備份 / 還原</span>
@@ -1073,7 +1151,7 @@
 
     <div class="amount-input-box">
       <span>$</span>
-      <input type="number" id="inputAmount" inputmode="decimal" placeholder="輸入總金額" oninput="updateCalcPreview()" />
+      <input type="number" id="inputAmount" inputmode="decimal" placeholder="輸入總金額" oninput="updateCalcPreview()" onkeydown="handleAmountKeydown(event)" />
     </div>
 
     <div class="quick-amount-bar">
@@ -1084,6 +1162,7 @@
       <button type="button" class="quick-amt-btn" onclick="addQuickAmount(300)">+$300</button>
       <button type="button" class="quick-amt-btn" onclick="addQuickAmount(500)">+$500</button>
       <button type="button" class="quick-amt-btn" onclick="addQuickAmount(1000)">+$1,000</button>
+      <button type="button" class="quick-amt-btn" id="undoQuickAmtBtn" onclick="undoQuickAmount()">退回</button>
       <button type="button" class="quick-amt-btn" onclick="clearAmount()">清除</button>
     </div>
 
@@ -1124,10 +1203,13 @@
 
     <div class="meta-inputs">
       <input type="date" id="inputDate" />
-      <input type="text" id="inputNote" placeholder="備註 (如: 趟數、地點)" />
+      <input type="text" id="inputNote" placeholder="備註 (如: 趟數、地點)" onkeydown="handleNoteKeydown(event)" />
     </div>
 
-    <button class="submit-btn" id="submitTxBtn" onclick="saveTransaction()">儲存紀錄</button>
+    <div class="sheet-footer-actions">
+      <button type="button" class="cancel-sheet-btn" onclick="closeModal()">取消</button>
+      <button type="button" class="submit-btn" id="submitTxBtn" onclick="saveTransaction()">儲存紀錄</button>
+    </div>
   </div>
 </div>
 
@@ -1213,6 +1295,7 @@
   let targets = JSON.parse(localStorage.getItem('driver_targets_v1')) || { month: 60000, year: 800000 };
   let localUpdatedAt = Number(localStorage.getItem('driver_ledger_updated_at_v1') || 0);
   let pendingCloudPush = localStorage.getItem('driver_ledger_pending_push_v1') === '1';
+  let lastSyncedClock = localStorage.getItem('driver_ledger_last_sync_clock_v1') || '';
 
   let currentYear = new Date().getFullYear();
   let currentMonth = new Date().getMonth();
@@ -1226,12 +1309,34 @@
   let lastSavedType = null;
   let lastSavedCategory = null;
   let lastSavedDate = null;
+  let quickAmountHistory = [];
   let currentCalcMode = 'opt1';
   let editingTxId = null;
   let manageCatType = 'income';
   let chartMode = 'income';
+  let selectedDrillCategoryId = null;
   let chartInstance = null;
   let weeklyChartInstance = null;
+
+  function formatShortClock(dateObj = new Date()) {
+    const hh = String(dateObj.getHours()).padStart(2, '0');
+    const mm = String(dateObj.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+  }
+
+  function setSyncLabel(stateText) {
+    const statusEl = document.getElementById('syncStatus');
+    if (!statusEl) return;
+    if (stateText === '已同步') {
+      lastSyncedClock = formatShortClock();
+      localStorage.setItem('driver_ledger_last_sync_clock_v1', lastSyncedClock);
+      statusEl.textContent = `已同步 ${lastSyncedClock}`;
+    } else if (stateText === '待補傳' && lastSyncedClock) {
+      statusEl.textContent = `待補傳 · ${lastSyncedClock}`;
+    } else {
+      statusEl.textContent = stateText;
+    }
+  }
 
   function markLocalDirty() {
     localUpdatedAt = Date.now();
@@ -1383,6 +1488,32 @@
     const noteInput = document.getElementById('inputNote');
     if (amtInput) amtInput.addEventListener('focus', scrollSheetToSubmit);
     if (noteInput) noteInput.addEventListener('focus', scrollSheetToSubmit);
+
+    window.addEventListener('online', () => {
+      if (pendingCloudPush) saveDataToCloud();
+      else syncWithCloud();
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && pendingCloudPush) {
+        saveDataToCloud();
+      }
+    });
+  }
+
+  function handleAmountKeydown(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const noteEl = document.getElementById('inputNote');
+      if (noteEl) noteEl.focus();
+    }
+  }
+
+  function handleNoteKeydown(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveTransaction();
+    }
   }
 
   function updatePeriodLabel() {
@@ -1405,6 +1536,7 @@
 
   function toggleViewMode() {
     viewMode = viewMode === 'month' ? 'year' : 'month';
+    selectedDrillCategoryId = null;
     updatePeriodLabel();
     renderAll();
   }
@@ -1417,6 +1549,7 @@
     } else {
       currentYear += delta;
     }
+    selectedDrillCategoryId = null;
     updatePeriodLabel();
     renderAll();
   }
@@ -1737,6 +1870,62 @@
     grid.innerHTML = html;
   }
 
+  function buildDaySummaryText() {
+    const dayList = transactions
+      .filter(t => t.date === selectedDateStr)
+      .sort((a, b) => b.id - a.id);
+
+    let dayInc = 0;
+    let dayExp = 0;
+    let dayDeduct = 0;
+    let dayTip = 0;
+    let dayIncomeCount = 0;
+
+    dayList.forEach(t => {
+      if (t.type === 'income') {
+        dayInc += t.amount;
+        dayDeduct += (t.deduction || 0);
+        dayTip += getTxTipAmount(t);
+        dayIncomeCount += 1;
+      } else {
+        dayExp += t.amount;
+        if (isFixedDeductExpense(t) || isOtherDeductExpense(t)) {
+          dayDeduct += t.amount;
+        }
+      }
+    });
+
+    const net = dayInc - dayExp;
+    return [
+      `【${selectedDateStr} 跑單摘要】`,
+      `單數：${dayIncomeCount} 筆`,
+      `收入：$${dayInc.toLocaleString()}`,
+      `回金：$${dayDeduct.toLocaleString()}`,
+      `小費：$${dayTip.toLocaleString()}`,
+      `支出：$${dayExp.toLocaleString()}`,
+      `淨結餘：${net < 0 ? '-' : ''}$${Math.abs(net).toLocaleString()}`
+    ].join('\n');
+  }
+
+  function copyDaySummary() {
+    const text = buildDaySummaryText();
+    const btn = document.getElementById('copyDaySummaryBtn');
+    const flashCopied = () => {
+      if (!btn) return;
+      const prev = btn.textContent;
+      btn.textContent = '已複製';
+      setTimeout(() => { btn.textContent = prev; }, 1400);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(flashCopied).catch(() => {
+        prompt('請複製以下當日摘要：', text);
+      });
+    } else {
+      prompt('請複製以下當日摘要：', text);
+    }
+  }
+
   function renderSelectedDayView() {
     const dayList = transactions
       .filter(t => t.date === selectedDateStr)
@@ -1803,11 +1992,59 @@
 
   function setExpenseViewMode(mode) {
     expenseViewMode = mode;
+    selectedDrillCategoryId = null;
     document.getElementById('expSubAllBtn').style.background = mode === 'all' ? 'var(--accent)' : 'var(--card-elevated)';
     document.getElementById('expSubAllBtn').style.color = mode === 'all' ? '#fff' : 'var(--text)';
     document.getElementById('expSubOpBtn').style.background = mode === 'op' ? 'var(--accent)' : 'var(--card-elevated)';
     document.getElementById('expSubOpBtn').style.color = mode === 'op' ? '#fff' : 'var(--text)';
     renderChart(getFilteredTransactions());
+  }
+
+  function selectDrillCategory(catId) {
+    if (!catId) return;
+    selectedDrillCategoryId = selectedDrillCategoryId === catId ? null : catId;
+    renderChart(getFilteredTransactions());
+  }
+
+  function renderCategoryDrilldown(filteredList) {
+    const drillEl = document.getElementById('categoryDrilldown');
+    if (!drillEl) return;
+    if (!selectedDrillCategoryId) {
+      drillEl.innerHTML = '';
+      return;
+    }
+
+    const cat = findCategoryInfo(chartMode, selectedDrillCategoryId);
+    const items = filteredList.filter(t => t.category === selectedDrillCategoryId);
+    if (items.length === 0) {
+      drillEl.innerHTML = '';
+      return;
+    }
+
+    const rowsHtml = items.slice(0, 15).map(t => {
+      const sub = formatTxSubtitle(t);
+      return `
+        <div class="cat-drilldown-item">
+          <div style="min-width:0;">
+            <div style="font-weight:600;">${escapeHTML(t.date || '')}</div>
+            <div style="font-size:11px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(sub)}</div>
+          </div>
+          <strong class="${t.type === 'income' ? 'inc-color' : 'exp-color'}" style="white-space:nowrap; font-variant-numeric:tabular-nums;">
+            ${t.type === 'income' ? '+' : '-'}$${Number(t.amount || 0).toLocaleString()}
+          </strong>
+        </div>
+      `;
+    }).join('');
+
+    drillEl.innerHTML = `
+      <div class="cat-drilldown-box">
+        <div class="cat-drilldown-header">
+          <span>${cat.icon} ${escapeHTML(cat.name)}（${items.length} 筆）</span>
+          <button type="button" class="mini-copy-btn" onclick="selectDrillCategory('${selectedDrillCategoryId}')">清除篩選</button>
+        </div>
+        <div class="cat-drilldown-list">${rowsHtml}</div>
+      </div>
+    `;
   }
 
   function getTxTotalDeduction(tx) {
@@ -1890,6 +2127,7 @@
       const count = counts[unknownId] || 0;
       const fallbackColor = getDistinctColor(chartMode, catList.length + idx, usedColors);
       rawItems.push({
+        id: unknownId,
         name: '其他歷史分類',
         icon: '📝',
         amount: totals[unknownId],
@@ -1921,8 +2159,9 @@
       const topLabel = chartMode === 'income' ? '最高來源' : '最大支出';
       rankListEl.innerHTML = rawItems.slice(0, 5).map((item, idx) => {
         const rankText = idx === 0 ? topLabel : `第 ${idx + 1} 名`;
+        const activeCls = selectedDrillCategoryId === item.id ? 'active-filter' : '';
         return `
-          <div class="rank-card" style="border-left-color:${item.color};">
+          <div class="rank-card ${activeCls}" style="border-left-color:${item.color};" onclick="selectDrillCategory('${item.id}')">
             <div class="rank-card-left">
               <span style="font-size:20px;">${item.icon}</span>
               <div>
@@ -1951,17 +2190,20 @@
     if (rawItems.length === 0) {
       htmlContent = `<div class="empty-state" style="padding:20px; border:none;">${periodNameStr}無${chartMode === 'expense' ? (expenseViewMode==='op'?'純營運成本':'支出') : '收入'}數據</div>`;
     } else {
-      const tableRows = rawItems.map(item => `
-        <tr>
-          <td>
-            <span style="width:8px; height:8px; border-radius:50%; background:${item.color}; display:inline-block; margin-right:6px;"></span>
-            ${item.icon} ${escapeHTML(item.name)}
-          </td>
-          <td>${item.count}</td>
-          <td>$${item.amount.toLocaleString()}</td>
-          <td>$${item.avg.toLocaleString()}</td>
-        </tr>
-      `).join('');
+      const tableRows = rawItems.map(item => {
+        const activeRowCls = selectedDrillCategoryId === item.id ? 'active-row' : '';
+        return `
+          <tr class="clickable-row ${activeRowCls}" onclick="selectDrillCategory('${item.id}')">
+            <td>
+              <span style="width:8px; height:8px; border-radius:50%; background:${item.color}; display:inline-block; margin-right:6px;"></span>
+              ${item.icon} ${escapeHTML(item.name)}
+            </td>
+            <td>${item.count}</td>
+            <td>$${item.amount.toLocaleString()}</td>
+            <td>$${item.avg.toLocaleString()}</td>
+          </tr>
+        `;
+      }).join('');
 
       htmlContent = `
         <div style="font-size:13px; font-weight:700; margin-bottom:8px; color:var(--text-muted);">📋 ${chartMode === 'income' ? '平台／分類統計' : '支出項目明細'}</div>
@@ -2040,6 +2282,7 @@
     }
 
     breakdownEl.innerHTML = htmlContent;
+    renderCategoryDrilldown(filtered);
 
     const ctx = document.getElementById('categoryChart').getContext('2d');
     if (chartInstance) chartInstance.destroy();
@@ -2058,6 +2301,14 @@
         responsive: true,
         maintainAspectRatio: false,
         cutout: '70%',
+        onClick: (_, elements) => {
+          if (elements && elements.length > 0) {
+            const idx = elements[0].index;
+            if (rawItems[idx] && rawItems[idx].id) {
+              selectDrillCategory(rawItems[idx].id);
+            }
+          }
+        },
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -2088,6 +2339,7 @@
 
   function toggleChartType() {
     chartMode = chartMode === 'expense' ? 'income' : 'expense';
+    selectedDrillCategoryId = null;
     document.getElementById('chartTitle').textContent = chartMode === 'expense' ? '支出圓環圖與統計' : '收入圓環圖與統計';
     document.getElementById('chartToggleBtn').textContent = chartMode === 'expense' ? '切換收入統計' : '切換支出統計';
     renderChart(getFilteredTransactions());
@@ -2097,14 +2349,28 @@
     const input = document.getElementById('inputAmount');
     const cur = parseFloat(input.value);
     const base = Number.isFinite(cur) && cur > 0 ? cur : 0;
-    const nextVal = Math.round((base + Number(addVal)) * 100) / 100;
+    const step = Number(addVal);
+    const nextVal = Math.round((base + step) * 100) / 100;
+    quickAmountHistory.push(step);
     input.value = String(nextVal);
+    updateCalcPreview();
+  }
+
+  function undoQuickAmount() {
+    if (quickAmountHistory.length === 0) return;
+    const lastStep = quickAmountHistory.pop();
+    const input = document.getElementById('inputAmount');
+    const cur = parseFloat(input.value);
+    const base = Number.isFinite(cur) ? cur : 0;
+    const nextVal = Math.max(0, Math.round((base - lastStep) * 100) / 100);
+    input.value = nextVal > 0 ? String(nextVal) : '';
     updateCalcPreview();
   }
 
   function clearAmount() {
     const input = document.getElementById('inputAmount');
     input.value = '';
+    quickAmountHistory = [];
     updateCalcPreview();
   }
 
@@ -2166,6 +2432,7 @@
 
   function openModal() {
     editingTxId = null;
+    quickAmountHistory = [];
     const sheet = document.getElementById('txBottomSheet');
     if (sheet) sheet.scrollTop = 0;
     document.getElementById('modalBackdrop').classList.add('open');
@@ -2185,6 +2452,7 @@
         selectCategory(lastSavedCategory);
       }
     }
+    document.getElementById('inputTipFee').value = '0';
     updateCalcPreview();
   }
 
@@ -2193,6 +2461,7 @@
     if (!tx) return;
 
     editingTxId = id;
+    quickAmountHistory = [];
     const sheet = document.getElementById('txBottomSheet');
     if (sheet) sheet.scrollTop = 0;
     document.getElementById('modalBackdrop').classList.add('open');
@@ -2229,6 +2498,7 @@
 
   function closeModal() {
     editingTxId = null;
+    quickAmountHistory = [];
     document.getElementById('modalBackdrop').classList.remove('open');
   }
 
@@ -2277,6 +2547,7 @@
         const defFixed = FIXED_RETURN_OPTIONS.includes(Number(cat.fixedReturn)) ? Number(cat.fixedReturn) : 20;
         document.getElementById('inputFixedReturn').value = String(defFixed);
       }
+      document.getElementById('inputTipFee').value = '0';
     }
     updateCalcPreview();
   }
@@ -2335,6 +2606,7 @@
     lastSavedType = currentTxType;
     lastSavedCategory = selectedCategory;
     lastSavedDate = date;
+    quickAmountHistory = [];
 
     selectedDateStr = date;
     weekAnchorDate = parseDateYMD(date);
@@ -2365,6 +2637,19 @@
     }
   }
 
+  function savePreImportSnapshot() {
+    try {
+      const snapshot = {
+        savedAt: new Date().toISOString(),
+        updatedAt: localUpdatedAt,
+        records: transactions,
+        categories,
+        targets
+      };
+      localStorage.setItem('driver_pre_import_snapshot_v1', JSON.stringify(snapshot));
+    } catch (_) {}
+  }
+
   function handleImportJsonFile(event) {
     const file = event && event.target && event.target.files && event.target.files[0];
     if (!file) return;
@@ -2382,9 +2667,11 @@
           return;
         }
 
-        if (!confirm(`確定要以「${file.name}」（共 ${importedRecords.length} 筆紀錄）覆蓋目前帳本嗎？`)) {
+        if (!confirm(`確定要以「${file.name}」（共 ${importedRecords.length} 筆紀錄）覆蓋目前帳本嗎？系統會先在本地保留匯入前快照。`)) {
           return;
         }
+
+        savePreImportSnapshot();
 
         transactions = importedRecords;
         if (parsed && !Array.isArray(parsed) && parsed.categories && typeof parsed.categories === 'object') {
@@ -2617,8 +2904,7 @@
   }
 
   function syncWithCloud() {
-    const statusEl = document.getElementById('syncStatus');
-    statusEl.textContent = '同步中...';
+    setSyncLabel('同步中...');
 
     let isDone = false;
     const cbName = 'jsonp_cb_' + Math.round(Math.random() * 100000);
@@ -2626,7 +2912,7 @@
     const timeoutTimer = setTimeout(() => {
       if (!isDone) {
         isDone = true;
-        statusEl.textContent = pendingCloudPush ? '待補傳' : '離線運行';
+        setSyncLabel(pendingCloudPush ? '待補傳' : '離線運行');
         renderAll();
         if (pendingCloudPush) saveDataToCloud();
       }
@@ -2668,10 +2954,10 @@
           localStorage.setItem('driver_ledger_v1', JSON.stringify(transactions));
           localStorage.setItem('driver_categories_v1', JSON.stringify(categories));
           renderAll();
-          statusEl.textContent = '已同步';
+          setSyncLabel('已同步');
         }
       } else {
-        statusEl.textContent = pendingCloudPush ? '待補傳' : '同步失敗';
+        setSyncLabel(pendingCloudPush ? '待補傳' : '同步失敗');
         renderAll();
       }
     };
@@ -2682,7 +2968,7 @@
       if (isDone) return;
       isDone = true;
       clearTimeout(timeoutTimer);
-      statusEl.textContent = pendingCloudPush ? '待補傳' : '離線運行';
+      setSyncLabel(pendingCloudPush ? '待補傳' : '離線運行');
       renderAll();
     };
     document.body.appendChild(scriptEl);
@@ -2696,8 +2982,7 @@
     localStorage.setItem('driver_ledger_v1', JSON.stringify(transactions));
     localStorage.setItem('driver_categories_v1', JSON.stringify(categories));
     localStorage.setItem('driver_targets_v1', JSON.stringify(targets));
-    const statusEl = document.getElementById('syncStatus');
-    statusEl.textContent = '上傳中...';
+    setSyncLabel('上傳中...');
 
     const payload = {
       action: 'save',
@@ -2718,13 +3003,13 @@
     .then(res => {
       if (res.success) {
         clearLocalDirty();
-        statusEl.textContent = '已同步';
+        setSyncLabel('已同步');
       } else {
-        statusEl.textContent = '待補傳';
+        setSyncLabel('待補傳');
       }
     })
     .catch(() => {
-      statusEl.textContent = '待補傳';
+      setSyncLabel('待補傳');
     });
   }
 
