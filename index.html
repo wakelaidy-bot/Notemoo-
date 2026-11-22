@@ -29,6 +29,9 @@
       -webkit-tap-highlight-color: transparent;
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
     }
+    button, [role="button"], .cat-chip, .cal-cell, .weekly-day-pill {
+      touch-action: manipulation;
+    }
     body {
       margin: 0;
       background-color: var(--bg);
@@ -588,6 +591,7 @@
     }
     .modal-backdrop.open { display: flex; }
     .bottom-sheet {
+      position: relative;
       background: #1C1C1E;
       width: 100%;
       max-width: 500px;
@@ -597,6 +601,7 @@
       max-height: 90vh;
       overflow-y: auto;
       overscroll-behavior: contain;
+      touch-action: pan-y;
       animation: slideUp 0.22s ease-out;
     }
     @keyframes slideUp {
@@ -657,6 +662,7 @@
       overflow-x: auto;
       padding-bottom: 4px;
       margin-bottom: 12px;
+      touch-action: pan-x;
     }
     .quick-amt-btn {
       background: #2C2C2E;
@@ -992,7 +998,7 @@
 
 <!-- 新增 / 編輯記帳彈出面板 -->
 <div class="modal-backdrop" id="modalBackdrop" onclick="closeModalOnBg(event)">
-  <div class="bottom-sheet">
+  <div class="bottom-sheet" id="txBottomSheet">
     <div class="sheet-header">
       <div class="type-toggle">
         <button id="btnTypeInc" class="active-inc" onclick="setTxType('income')">收入</button>
@@ -1969,13 +1975,16 @@
 
   function addQuickAmount(addVal) {
     const input = document.getElementById('inputAmount');
-    const cur = parseFloat(input.value) || 0;
-    input.value = cur + addVal;
+    const cur = parseFloat(input.value);
+    const base = Number.isFinite(cur) && cur > 0 ? cur : 0;
+    const nextVal = Math.round((base + Number(addVal)) * 100) / 100;
+    input.value = String(nextVal);
     updateCalcPreview();
   }
 
   function clearAmount() {
-    document.getElementById('inputAmount').value = '';
+    const input = document.getElementById('inputAmount');
+    input.value = '';
     updateCalcPreview();
   }
 
@@ -2037,6 +2046,8 @@
 
   function openModal() {
     editingTxId = null;
+    const sheet = document.getElementById('txBottomSheet');
+    if (sheet) sheet.scrollTop = 0;
     document.getElementById('modalBackdrop').classList.add('open');
     document.getElementById('inputAmount').value = '';
     document.getElementById('inputNote').value = '';
@@ -2044,7 +2055,6 @@
     document.getElementById('inputTipFee').value = '0';
     document.getElementById('inputDate').value = selectedDateStr || formatDateYMD(new Date());
     setTxType('income');
-    setTimeout(() => document.getElementById('inputAmount').focus(), 100);
   }
 
   function openEditModal(id) {
@@ -2052,6 +2062,8 @@
     if (!tx) return;
 
     editingTxId = id;
+    const sheet = document.getElementById('txBottomSheet');
+    if (sheet) sheet.scrollTop = 0;
     document.getElementById('modalBackdrop').classList.add('open');
 
     setTxType(tx.type);
@@ -2081,8 +2093,7 @@
       document.getElementById('inputTipFee').value = String(restoredTip);
       setCalcMode(restoredMode || 'opt3');
     }
-
-    setTimeout(() => document.getElementById('inputAmount').focus(), 100);
+    updateCalcPreview();
   }
 
   function closeModal() {
